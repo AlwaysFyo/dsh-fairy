@@ -284,6 +284,51 @@ ${SCOPE} [data-composer-card='true'] {
   box-shadow: 0 0 0 1px rgba(97, 215, 255, 0.06), 0 18px 60px rgba(0, 0, 0, 0.55);
 }
 
+/* HDD turns the card into a wide HUD console flush with the conversation
+   rect: no float, no radius, one lit top edge and corner brackets. */
+${SCOPE} [data-dsh-fairy-composer-host] {
+  max-width: none !important;
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+${SCOPE} [data-composer-card='true'] {
+  --dsh-composer-card-max-width: none;
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 10px 12px 8px;
+  border: 0;
+  border-top: 1px solid rgba(97, 215, 255, 0.32);
+  border-radius: 0;
+  background-image: linear-gradient(180deg, rgba(11, 20, 32, 0.96), rgba(5, 8, 14, 0.99));
+  box-shadow: 0 -20px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(97, 215, 255, 0.2);
+}
+
+${SCOPE} [data-composer-card='true']::before,
+${SCOPE} [data-composer-card='true']::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  border-top: 2px solid var(--dsh-fairy-accent);
+  opacity: 0.55;
+}
+
+${SCOPE} [data-composer-card='true']::before {
+  left: 0;
+  border-left: 2px solid var(--dsh-fairy-accent);
+}
+
+${SCOPE} [data-composer-card='true']::after {
+  right: 0;
+  border-right: 2px solid var(--dsh-fairy-accent);
+}
+
 ${SCOPE} [data-composer-card='true']:focus-within {
   border-color: var(--dsw-alias-border-l2);
   box-shadow: 0 0 0 1px rgba(97, 215, 255, 0.22), 0 18px 60px rgba(0, 0, 0, 0.6);

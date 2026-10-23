@@ -12,11 +12,14 @@ export const MARKER_ATTRS = Object.freeze({
   sidebarSurface: 'data-dsh-fairy-sidebar-surface',
   brandAnchor: 'data-dsh-fairy-brand-anchor',
   composerSeat: 'data-dsh-fairy-composer-seat',
+  composerHost: 'data-dsh-fairy-composer-host',
 })
 
 const SIDEBAR_SLOT = '[data-slot="sidebar"]'
 const BRAND_SLOT = '[data-slot="sidebar.brand.mark"]'
 const SEAT = '[data-composer-seat]'
+const CARD = '[data-composer-card="true"]'
+const COMPOSER_MAX_DEPTH = 6
 
 /** First real box under a `display: contents` slot outlet. */
 const outletChild = (doc, selector) => {
@@ -100,6 +103,26 @@ export function createMarkers(doc = document) {
     want(outletChild(doc, BRAND_SLOT), MARKER_ATTRS.brandAnchor)
 
     for (const seat of doc.querySelectorAll(SEAT)) want(seat, MARKER_ATTRS.composerSeat)
+
+    /* The official composer is capped at a centred reading width. HDD owns the
+       full conversation rect, so every real box between the card and the seat
+       is projected too; `display: contents` outlets generate no box and are
+       skipped so the marker always lands on something that can be styled. */
+    const card = doc.querySelector(CARD)
+    if (card) {
+      let node = card.parentElement
+      for (let depth = 0; node && depth < COMPOSER_MAX_DEPTH; depth += 1) {
+        if (node === doc.body || node.hasAttribute('data-composer-seat')) break
+        let display = ''
+        try {
+          display = doc.defaultView?.getComputedStyle(node)?.display ?? ''
+        } catch {
+          display = ''
+        }
+        if (display && display !== 'contents') want(node, MARKER_ATTRS.composerHost)
+        node = node.parentElement
+      }
+    }
 
     prune(keep)
   }

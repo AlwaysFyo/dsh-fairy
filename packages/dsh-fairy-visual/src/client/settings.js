@@ -17,11 +17,17 @@ export function normalize(raw) {
   }
 }
 
+/** Host routes answer with `{ ok, settings }`; accept a bare object too. */
+const unwrap = (payload) =>
+  payload && typeof payload === 'object' && payload.settings && typeof payload.settings === 'object'
+    ? payload.settings
+    : payload
+
 export async function loadSettings() {
   try {
     const response = await fetch(SETTINGS_URL, { headers: { accept: 'application/json' } })
     if (!response.ok) return { ...DEFAULT_SETTINGS }
-    return normalize(await response.json())
+    return normalize(unwrap(await response.json()))
   } catch {
     return { ...DEFAULT_SETTINGS }
   }
@@ -35,7 +41,7 @@ export async function saveSettings(settings) {
       body: JSON.stringify(settings),
     })
     if (!response.ok) return { ok: false, status: response.status }
-    return { ok: true, settings: normalize(await response.json()) }
+    return { ok: true, settings: normalize(unwrap(await response.json())) }
   } catch (error) {
     return { ok: false, error: String(error?.message ?? error) }
   }
