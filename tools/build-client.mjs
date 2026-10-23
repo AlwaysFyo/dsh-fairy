@@ -11,7 +11,7 @@
  * fully in-process (no child process, so it also works under the Windows file
  * sandbox). See docs/official-api-notes.md.
  */
-import { readFile, mkdir, rename, writeFile } from 'node:fs/promises'
+import { access, readFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -34,7 +34,22 @@ export const PLATFORM_MODULES = Object.freeze([
   '@deepseek-ai/dsh-client-ui-dockkit',
 ])
 
-const ENTRY = 'src/client/index.js'
+const ENTRY = 'src/client/entry.js'
+const LEGACY_ENTRY = 'src/client/index.js'
+
+/** Prefers the ESM `entry.js` shim, falling back to a plain `index.js` entry. */
+const pickEntry = async (pkgDir) => {
+  for (const candidate of [ENTRY, LEGACY_ENTRY]) {
+    const file = path.join(pkgDir, candidate)
+    try {
+      await access(file)
+      return file
+    } catch {
+      // try the next candidate
+    }
+  }
+  throw new Error(`${pkgDir}: missing client entry (${ENTRY} or ${LEGACY_ENTRY})`)
+}
 
 export async function buildClient(pkgDir) {
   const pkg = JSON.parse(await readFile(path.join(pkgDir, 'package.json'), 'utf8'))
@@ -43,7 +58,7 @@ export async function buildClient(pkgDir) {
     throw new Error(`${pkg.name}: package.json is missing "dsh.client"`)
   }
 
-  const entry = path.join(pkgDir, ENTRY)
+  const entry = await pickEntry(pkgDir)
   const externals = [...new Set([...PLATFORM_MODULES, ...(clientManifest.external ?? [])])]
   const warnings = []
 

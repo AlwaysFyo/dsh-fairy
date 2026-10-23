@@ -34,7 +34,22 @@ const clientReports = []
 const MAX_REPORTS = 5
 
 const dshHome = () => process.env.DSH_HOME || join(homedir(), '.dsh')
-const settingsFile = () => join(dshHome(), 'fairy-visual', 'settings.json')
+const settingsDir = () => join(dshHome(), 'fairy-visual')
+const settingsFile = () => join(settingsDir(), 'settings.json')
+
+/**
+ * Every persisted scope lives in its own file. `fairy-visual` keeps the original
+ * `settings.json` name; the others are named after their namespace so a reader can
+ * find them without this file.
+ */
+const NAMESPACES = Object.freeze({
+  'fairy-visual': { file: 'settings.json', schema: SCHEMA_VERSION },
+  'fairy-identity': { file: 'identity.json', schema: null },
+})
+const DEFAULT_NAMESPACE = 'fairy-visual'
+const DEFAULT_IDENTITY = Object.freeze({ mode: 'ling', customName: '', secondAssistant: '', household: [] })
+const resolveNamespace = (raw) => (typeof raw === 'string' && raw in NAMESPACES ? raw : DEFAULT_NAMESPACE)
+const scopeFile = (namespace) => join(settingsDir(), NAMESPACES[namespace].file)
 
 const readBody = (req) =>
   new Promise((resolve, reject) => {
@@ -70,17 +85,27 @@ const normalize = (raw) => {
   return next
 }
 
-const readSettings = async () => normalize(await readJsonFile(settingsFile()))
-
-const writeSettings = async (settings) => {
-  const dir = join(dshHome(), 'fairy-visual')
-  await mkdir(dir, { recursive: true })
-  const target = settingsFile()
-  const tmp = `${target}.tmp`
-  await writeFile(tmp, `${JSON.stringify(settings, null, 2)}\n`, 'utf8')
-  await rename(tmp, target)
-  return settings
+const readScope = async (namespace) => {
+  const raw = await readJsonFile(scopeFile(namespace))
+  if (namespace === DEFAULT_NAMESPACE) return normalize(raw)
+  const base = namespace === 'fairy-identity' ? DEFAULT_IDENTITY : {}
+  return { ...base, ...(raw && typeof raw === 'object' ? raw : {}) }
 }
+
+const writeScope = async (namespace, value) => {
+  const source = value && typeof value === 'object' ? value : {}
+  const stored = namespace === DEFAULT_NAMESPACE
+    ? normalize(source)
+    : { ...(namespace === 'fairy-identity' ? DEFAULT_IDENTITY : {}), ...source }
+  await mkdir(settingsDir(), { recursive: true })
+  const target = scopeFile(namespace)
+  const tmp = `${target}.tmp`
+  await writeFile(tmp, `${JSON.stringify(stored, null, 2)}\n`, 'utf8')
+  await rename(tmp, target)
+  return stored
+}
+
+const readSettings = () => readScope(DEFAULT_NAMESPACE)
 
 export function apply(ctx) {
   ctx.inject(['webServer'], (webCtx) => {
@@ -103,8 +128,9 @@ export function apply(ctx) {
             }
 
             if (url.pathname === `${ROUTE_PREFIX}/settings`) {
+              const namespace = resolveNamespace(url.searchParams.get('ns'))
               if (req.method === 'GET' || req.method === 'HEAD') {
-                json(200, { ok: true, settings: await readSettings() })
+                json(200, { ok: true, namespace, value: await readScope(namespace) })
                 return
               }
               if (req.method === 'PUT' || req.method === 'POST') {
@@ -115,8 +141,8 @@ export function apply(ctx) {
                   json(400, { ok: false, error: String(error?.message ?? error) })
                   return
                 }
-                const saved = await writeSettings(normalize(incoming?.settings ?? incoming))
-                json(200, { ok: true, settings: saved })
+                const saved = await writeScope(namespace, incoming?.value ?? incoming?.settings ?? incoming)
+                json(200, { ok: true, namespace, value: saved })
                 return
               }
               json(405, { ok: false, error: 'method not allowed' })
@@ -136,6 +162,7 @@ export function apply(ctx) {
                 cwd: process.cwd(),
                 settingsFile: settingsFile(),
                 settings: await readSettings(),
+                identity: await readScope('fairy-identity'),
                 clientReports,
               })
               return

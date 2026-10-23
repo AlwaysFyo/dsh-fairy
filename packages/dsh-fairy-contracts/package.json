@@ -2,19 +2,23 @@
   "name": "dsh-fairy-contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared, immutable contracts between the Fairy DSH plugins (no DOM, no network, no storage).",
+  "description": "Immutable contracts shared by the Fairy DSH plugins (no DOM, no network, no storage).",
   "type": "module",
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
-    "./client-dom": "./client-dom.js",
+    "./client-dom": "./client-dom.cjs",
+    "./client-diagnostics": "./client-diagnostics.cjs",
     "./diagnostics": "./diagnostics.js",
+    "./types": "./types.d.ts",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
-    "client-dom.js",
-    "diagnostics.js"
+    "client-dom.cjs",
+    "client-diagnostics.cjs",
+    "diagnostics.js",
+    "types.d.ts"
   ],
   "license": "Apache-2.0"
 }
