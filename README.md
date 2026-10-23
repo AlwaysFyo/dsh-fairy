@@ -83,12 +83,27 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | --- | --- |
 | 参考少 `data-dsh-fairy-composer-{command,mode,reasoning}-control` 三个标记 | 参考 profile 额外装了 `dsh-reasoning-effort`、模式选择器；本 dev profile 只有 base+web-app+fairy，控件不存在自然无标记 |
 | 参考侧栏无「插件 / 自动化任务」行、设置行为「设置」42px | 参考实例的 profile 未启用这些面板；本实例走官方 panellist 布局（HDD 开/关均一致，非主题改动） |
-| 余额卡 `unavailable` | 0.2.1 的 `.credentials.yaml` 是结构化 `records:` 格式，没有参考实现读取的扁平 `DEEPSEEK_API_KEY`；参考实例同样显示 unavailable |
+| 余额卡 `unavailable` | 0.2.1 的 `.credentials.yaml` 是结构化 `records:` 格式，没有参考实现读取的扁平 `DEEPSEEK_API_KEY`；把结构里的平台 grant token 直接当 API key 请求 `api.deepseek.com/user/balance` 会 401（已实测），所以这是凭据形态问题，参考实例同样 unavailable |
 | 朗读按钮存在但不出声 | 需要外部本地 TTS（`127.0.0.1:9880`）与参考音色样本，仓库不提供 |
+
+### 设置面板的打开前提
+
+`Ctrl + Alt + ,` 打开设置；**未登录时打开的是「开始使用」引导页而不是设置面板**
+（`settings.section` 出口不会出现）。隔离实例要验收设置页，需要把
+`~/.dsh/.credentials.yaml` 复制到 `.dsh-dev-home/`（该目录已在 `.gitignore` 里）。
+
+已用真实鼠标事件逐项验收（`settings-mode-audit` 流程）：
+
+| 控件 | 效果 |
+| --- | --- |
+| 启用 HDD 视觉 | `html[data-dsh-fairy-visual]` / `data-dsh-fairy-mode=hdd` 挂卸 |
+| HDD 日间模式 | `theme=light`，`body` 背景 `rgb(247,250,252)`、`label-primary #172531`，与参考浅色配色一致 |
+| 显示 Fairy 主视觉 | 舞台吉祥物显隐 |
+| 低功耗模式 | `power-mode=low-power`，吉祥物 `[data-low-power]` 生效，装饰动画停 |
+| Fairy 当前将我识别为 | 铃 / 哲 / 自定义（`fairy-identity` 命名空间持久化） |
 
 ## 待办
 
-- [ ] 设置面板「HDD 视觉与 Fairy 身份」分节的人工确认（自动化点开面板尚不稳定）
 - [ ] 会话切换 glitch（`dsh-hdd-session-transition`）在 0.2.1 的复验
 - [ ] Voice 端到端（接上 TTS 后验证波形、自动朗读、音色）
 - [ ] 市场安装路径：把锚包打进 catalog 并在真实 profile 上验证「一键停/起」
