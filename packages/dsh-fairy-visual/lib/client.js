@@ -379,6 +379,103 @@ function requireScopeShim () {
 	return scopeShim;
 }
 
+/**
+ * Session selection source for the ported Controller.
+ *
+ * The 0.1.1 runtime exposed the selected Session as `sessions.list.#
+ * getSnapshot().current`. In 0.2.1 the Session list snapshot is only
+ * `{ ids, byId, phase, projectionsBySession }` — there is no selection on it —
+ * and the selection moved to the `uiSession` service: `uiSession.current` is a
+ * store whose value carries `key`, the selected `SessionId`.
+ *
+ * This module keeps one tiny surface for the Controller so the ported code keeps
+ * working across both shapes: `currentId()`, `subscribe()`, `binding(id)`.
+ *
+ * Verified against dsh 0.2.1-rc.2: `uiSession.current.getSnapshot().key` is the
+ * selected SessionId and changes on switch; `sessions.binding(id)` still
+ * resolves the Session binding.
+ */
+
+var sessionSource;
+var hasRequiredSessionSource;
+
+function requireSessionSource () {
+	if (hasRequiredSessionSource) return sessionSource;
+	hasRequiredSessionSource = 1;
+	const readSelection = (store) => {
+	  if (!store) return undefined;
+	  try {
+	    const snapshot = typeof store.getSnapshot === 'function' ? store.getSnapshot() : store.value;
+	    if (snapshot == null) return undefined;
+	    if (typeof snapshot === 'string') return snapshot;
+	    const key = snapshot.key ?? snapshot.current ?? snapshot.sessionId;
+	    return typeof key === 'string' ? key : undefined;
+	  } catch {
+	    return undefined;
+	  }
+	};
+
+	function createSessionSource(ctx) {
+	  // Resolve lazily: Cordis hands services out through the context proxy, and a
+	  // service that is not up yet at apply time must not be memoized as absent.
+	  const lookup = (name) => {
+	    if (!ctx) return undefined;
+	    // Cordis throws ("cannot get property … without inject") for services this
+	    // plugin did not declare, so the direct read must stay defensive.
+	    try {
+	      const direct = ctx[name];
+	      if (direct) return direct;
+	    } catch {
+	      /* not injected: fall through to the reflective lookup */
+	    }
+	    return typeof ctx.get === 'function' ? ctx.get(name) : undefined;
+	  };
+	  const sessionsOf = () => lookup('sessions');
+	  const selectionOf = () => {
+	    const uiSession = lookup('uiSession');
+	    return uiSession && uiSession.current ? uiSession.current : null;
+	  };
+
+	  return {
+	    currentId() {
+	      const selected = readSelection(selectionOf());
+	      if (selected !== undefined) return selected;
+	      // Fallback for runtimes that still expose the selection on the list store.
+	      const sessions = sessionsOf();
+	      return sessions && sessions.list ? readSelection(sessions.list) : undefined;
+	    },
+
+	    subscribe(listener) {
+	      const offs = [];
+	      const add = (store) => {
+	        if (store && typeof store.subscribe === 'function') offs.push(store.subscribe(listener));
+	      };
+	      add(selectionOf());
+	      const sessions = sessionsOf();
+	      add(sessions && sessions.list);
+	      return () => {
+	        for (const off of offs) {
+	          try {
+	            if (typeof off === 'function') off();
+	          } catch {
+	            /* already disposed */
+	          }
+	        }
+	      };
+	    },
+
+	    binding(id) {
+	      const sessions = sessionsOf();
+	      if (id == null || !sessions || typeof sessions.binding !== 'function') return null;
+	      return sessions.binding(id);
+	    },
+	  };
+	}
+
+	sessionSource = { createSessionSource };
+	return sessionSource;
+}
+
 function injectStyles() {
   if (document.getElementById(STYLE_ID)) return;
   const el = document.createElement('style');
@@ -664,7 +761,7 @@ const style = /*#__PURE__*/Object.defineProperty({
 	injectStyles
 }, Symbol.toStringTag, { value: 'Module' });
 
-const require$$6 = /*@__PURE__*/getAugmentedNamespace(style);
+const require$$7 = /*@__PURE__*/getAugmentedNamespace(style);
 
 var clientDom;
 var hasRequiredClientDom;
@@ -7260,7 +7357,8 @@ function requireClient () {
 	const IDENTITY_SETTINGS_NAMESPACE = 'fairy-identity';
 	const { deriveSessionActivity, syncDocumentMode } = require$$4;
 	const { createSettingsHandle } = requireScopeShim();
-	const { injectStyles } = require$$6;
+	const { createSessionSource } = requireSessionSource();
+	const { injectStyles } = require$$7;
 	const { mountComposerDock } = requireComposerDock();
 	const { createLifecycleScope, claimSingleton } = requireLifecycle();
 	const { createManagedMutationObserver, getDomObserverManager } = requireDomObserverManager();
@@ -7304,9 +7402,9 @@ function requireClient () {
 
 	    /* The mascot runtime is isolated from React and owns only its visual lifecycle. */
 	    class Controller {
-	      constructor(settings, sessions) {
+	      constructor(settings, sessionSource) {
 	        this.settings = settings;
-	        this.sessions = sessions;
+	        this.sessionSource = sessionSource;
 	        this.modeTransition = visualTransitions.createModeTransition();
 	        this.sessionTransition = visualTransitions.createSessionTransition();
 	        this.themeTransition = visualTransitions.createThemeTransition(this.modeTransition);
@@ -7321,7 +7419,7 @@ function requireClient () {
 	          sessionId: undefined,
 	        };
 	        this.lastGoodSettings = this.state.settings;
-	        this.listOff = sessions.list.subscribe(() => this.bind());
+	        this.listOff = sessionSource.subscribe(() => this.bind());
 	        this.settingsOff = settings.subscribe(() => {
 	          const next = settings.getSnapshot();
 	          const normalized = migrateVisualSettings({ ...DEFAULT, ...(next.value || {}) });
@@ -7346,8 +7444,8 @@ function requireClient () {
 	      }
 
 	      bind() {
-	        const id = this.sessions.list.getSnapshot().current;
-	        const next = id == null ? null : this.sessions.binding(id)?.session || null;
+	        const id = this.sessionSource.currentId();
+	        const next = id == null ? null : this.sessionSource.binding(id)?.session || null;
 	        if (this.hasBoundSession && id !== this.boundSessionId && this.state.settings.enabled) this.sessionTransition.trigger();
 	        this.boundSessionId = id;
 	        this.hasBoundSession = true;
@@ -8099,7 +8197,14 @@ function requireClient () {
 	        ].join(','),
 	      });
 	      ctx.effect(() => () => selectionGuard.dispose(), 'dsh-fairy-visual selection guard');
-	      const controller = new Controller(settings, ctx.sessions);
+	      const controller = new Controller(settings, createSessionSource(ctx));
+	      try {
+	        // Same opt-in flag as entry.js: lets the CDP probes read the projected
+	        // activity/lifecycle for the bound Session instead of guessing from pixels.
+	        if (globalThis.localStorage?.getItem('dsh-fairy:debug') === '1') globalThis.__dshFairyController = controller;
+	      } catch {
+	        /* storage unavailable */
+	      }
 	      if (typeof window !== 'undefined' && typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
 	        window.__fairyVisualLifecycle = {
 	          inspectController: () => controller.lifecycle?.inspect?.() || [],
@@ -8113,7 +8218,7 @@ function requireClient () {
 	      }, { surface: 'client' });
 	    }
 
-	    client = { apply, inject: ['slots', 'sessions'], name: 'dsh-fairy-visual' };
+	    client = { apply, inject: ['slots', 'sessions', 'uiSession'], name: 'dsh-fairy-visual' };
 	return client;
 }
 
@@ -8127,11 +8232,34 @@ const visual = /*@__PURE__*/getDefaultExportFromCjs(clientExports);
  * can be dropped in unchanged; this file is the only place that adapts it to the
  * ESM entry shape rollup expects. `@rollup/plugin-commonjs` turns the default
  * import into the module's `exports` object.
+ *
+ * `apply` also parks the plugin context on `globalThis.__dshFairyCtx` when
+ * `localStorage['dsh-fairy:debug'] === '1'`. That is what the CDP probes use to
+ * read the live service surface (`sessions`, `uiSession`, …) of a running page;
+ * without it nothing outside the plugin can inspect those objects.
  */
 
 const name = visual.name;
 const inject = visual.inject;
-const apply = visual.apply;
+
+const debugEnabled = () => {
+  try {
+    return globalThis.localStorage?.getItem('dsh-fairy:debug') === '1'
+  } catch {
+    return false
+  }
+};
+
+const apply = (ctx) => {
+  if (debugEnabled()) {
+    try {
+      globalThis.__dshFairyCtx = ctx;
+    } catch {
+      /* ignore */
+    }
+  }
+  return visual.apply(ctx)
+};
 
 exports.apply = apply;
 exports.inject = inject;

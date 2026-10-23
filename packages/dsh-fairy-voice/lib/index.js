@@ -10,8 +10,10 @@ import { createLocalTtsTransport, createPcmStreamHandler } from './server/local-
 import { createVoiceBriefFallback, createVoiceBrainServerBoundary } from './server/voice-brief-fallback.js';
 import { createFairyDiagnostics } from 'dsh-fairy-contracts/diagnostics';
 
-const LOCAL_TTS_URL = 'http://127.0.0.1:9880/tts';
-const LOCAL_DOCS_URL = 'http://127.0.0.1:9880/docs';
+// ported: the upstream GPT-SoVITS endpoint is overridable so the same build can
+// talk to another GPT-SoVITS-compatible server (or a mock) without editing code.
+const LOCAL_TTS_URL = process.env.DSH_FAIRY_TTS_URL || 'http://127.0.0.1:9880/tts';
+const LOCAL_DOCS_URL = process.env.DSH_FAIRY_DOCS_URL || 'http://127.0.0.1:9880/docs';
 // ported: resolve runtime files against DSH_HOME so an isolated profile (and the
 // dev instance) keeps its own reference audio and voice-brain config instead of
 // always reading the primary home.

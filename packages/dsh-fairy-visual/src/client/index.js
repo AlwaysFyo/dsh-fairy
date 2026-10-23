@@ -5,6 +5,7 @@ const { SETTINGS_NAMESPACE, STYLE_ID, MODE_ATTR, POWER_MODE_ATTR, THEME_ATTR, PO
 const IDENTITY_SETTINGS_NAMESPACE = 'fairy-identity';
 const { deriveSessionActivity, syncDocumentMode } = require('./utils.js');
 const { createSettingsHandle } = require('./scope-shim.js');
+const { createSessionSource } = require('./session-source.js');
 const { injectStyles } = require('./style.js');
 const { mountComposerDock } = require('./composer-dock.js');
 const { createLifecycleScope, claimSingleton } = require('./lifecycle.js');
@@ -49,9 +50,9 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
 
     /* The mascot runtime is isolated from React and owns only its visual lifecycle. */
     class Controller {
-      constructor(settings, sessions) {
+      constructor(settings, sessionSource) {
         this.settings = settings;
-        this.sessions = sessions;
+        this.sessionSource = sessionSource;
         this.modeTransition = visualTransitions.createModeTransition();
         this.sessionTransition = visualTransitions.createSessionTransition();
         this.themeTransition = visualTransitions.createThemeTransition(this.modeTransition);
@@ -66,7 +67,7 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
           sessionId: undefined,
         };
         this.lastGoodSettings = this.state.settings;
-        this.listOff = sessions.list.subscribe(() => this.bind());
+        this.listOff = sessionSource.subscribe(() => this.bind());
         this.settingsOff = settings.subscribe(() => {
           const next = settings.getSnapshot();
           const normalized = migrateVisualSettings({ ...DEFAULT, ...(next.value || {}) });
@@ -91,8 +92,8 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       }
 
       bind() {
-        const id = this.sessions.list.getSnapshot().current;
-        const next = id == null ? null : this.sessions.binding(id)?.session || null;
+        const id = this.sessionSource.currentId();
+        const next = id == null ? null : this.sessionSource.binding(id)?.session || null;
         if (this.hasBoundSession && id !== this.boundSessionId && this.state.settings.enabled) this.sessionTransition.trigger();
         this.boundSessionId = id;
         this.hasBoundSession = true;
@@ -844,7 +845,14 @@ function apply(ctx) {
         ].join(','),
       });
       ctx.effect(() => () => selectionGuard.dispose(), 'dsh-fairy-visual selection guard');
-      const controller = new Controller(settings, ctx.sessions);
+      const controller = new Controller(settings, createSessionSource(ctx));
+      try {
+        // Same opt-in flag as entry.js: lets the CDP probes read the projected
+        // activity/lifecycle for the bound Session instead of guessing from pixels.
+        if (globalThis.localStorage?.getItem('dsh-fairy:debug') === '1') globalThis.__dshFairyController = controller;
+      } catch {
+        /* storage unavailable */
+      }
       if (typeof window !== 'undefined' && typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
         window.__fairyVisualLifecycle = {
           inspectController: () => controller.lifecycle?.inspect?.() || [],
@@ -858,4 +866,4 @@ function apply(ctx) {
       }, { surface: 'client' });
     }
 
-    module.exports = { apply, inject: ['slots', 'sessions'], name: 'dsh-fairy-visual' };
+    module.exports = { apply, inject: ['slots', 'sessions', 'uiSession'], name: 'dsh-fairy-visual' };

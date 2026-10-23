@@ -1,44 +1,44 @@
 {
-  "name": "dsh-fairy-visual",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Fairy visual presentation for DSH: HDD theme, big-eye stage, composer dock and semantic marker system.",
-  "type": "module",
-  "main": "./lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "dsh": {
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-ui-slots",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar",
-        "@deepseek-ai/dsh-client-ui-conversation",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-primitives"
-      ]
-    }
-  },
-  "dependencies": {
-    "dsh-fairy-contracts": "link:../dsh-fairy-contracts"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "~4.0.5"
-  },
-  "engines": {
-    "node": ">=22.12.0"
-  },
-  "scripts": {
-    "bundle": "node ../../tools/build-client.mjs ."
-  },
-  "files": [
-    "lib",
-    "src"
-  ],
-  "license": "Apache-2.0"
+	"name": "dsh-fairy-visual",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Fairy visual presentation for DSH: HDD theme, big-eye stage, composer dock and semantic marker system.",
+	"type": "module",
+	"main": "./lib/index.js",
+	"exports": {
+		".": "./lib/index.js",
+		"./client": "./lib/client.js",
+		"./package.json": "./package.json"
+	},
+	"dsh": {
+		"client": {
+			"platform": "web",
+			"inject": [
+				"@deepseek-ai/dsh-client-connection",
+				"@deepseek-ai/dsh-client-ui-slots",
+				"@deepseek-ai/dsh-client-ui-layout",
+				"@deepseek-ai/dsh-client-ui-sidebar",
+				"@deepseek-ai/dsh-client-ui-conversation",
+				"@deepseek-ai/dsh-client-ui-settings",
+				"@deepseek-ai/dsh-client-ui-primitives"
+			]
+		}
+	},
+	"dependencies": {
+		"dsh-fairy-contracts": "^0.1.0"
+	},
+	"peerDependencies": {
+		"@deepseek-ai/cordis": "~4.0.5"
+	},
+	"engines": {
+		"node": ">=22.12.0"
+	},
+	"scripts": {
+		"bundle": "node ../../tools/build-client.mjs ."
+	},
+	"files": [
+		"lib",
+		"src"
+	],
+	"license": "Apache-2.0"
 }
