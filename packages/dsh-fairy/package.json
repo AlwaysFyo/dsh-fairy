@@ -17,7 +17,11 @@
     }
   },
   "dependencies": {
-    "dsh-fairy-visual": "link:../dsh-fairy-visual"
+    "dsh-fairy-visual": "link:../dsh-fairy-visual",
+    "dsh-fairy-startup": "link:../dsh-fairy-startup",
+    "dsh-balance-meter": "link:../dsh-balance-meter",
+    "dsh-fairy-voice": "link:../dsh-fairy-voice",
+    "dsh-browser-dock": "link:../dsh-browser-dock"
   },
   "engines": {
     "node": ">=22.12.0"

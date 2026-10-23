@@ -39,12 +39,15 @@ for (const entry of entries) {
 
   const head = 'window.__ModuleLoader__.load({'
   if (!code.startsWith(head)) problems.push(`${label}: bundle does not start with the module-loader header`)
-  if (!code.includes(`\tid: ${JSON.stringify(pkg.name)},`)) problems.push(`${label}: bundle id does not match package name`)
+  // Ported reference bundles use single quotes and two-space indentation; ours
+  // use JSON-style strings — accept either spelling of the same declaration.
+  const idPattern = new RegExp(`\\bid:\\s*(["'])${pkg.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1`)
+  if (!idPattern.test(code)) problems.push(`${label}: bundle id does not match package name`)
   if (!code.trimEnd().endsWith('});')) problems.push(`${label}: bundle does not end with the loader terminator`)
 
   const allowed = new Set([...PLATFORM_MODULES, ...(pkg.dsh.client.external ?? []), 'react/jsx-dev-runtime'])
-  for (const match of code.matchAll(/\brequire\(\s*"([^"]+)"\s*\)/g)) {
-    const spec = match[1]
+  for (const match of code.matchAll(/\brequire\(\s*(["'])([^"']+)\1\s*\)/g)) {
+    const spec = match[2]
     if (spec.startsWith('.') || spec.startsWith('/')) {
       problems.push(`${label}: relative sync require("${spec}") is not allowed in a client bundle`)
       continue

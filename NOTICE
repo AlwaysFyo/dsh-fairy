@@ -1,0 +1,72 @@
+NOTICE
+======
+
+dsh-fairy — a DSH plugin theme that recreates the Fairy / HDD presentation from
+Zenless Zone Zero inside DeepSeekRuntime.
+Copyright 2026 dsh-fairy contributors.
+
+This product includes software developed as part of Fairy-DSH
+(https://github.com/Chengzhibense/Fairy-DSH), Copyright 2026 Chengzhibense,
+licensed under the Apache License, Version 2.0. A copy of that license is in
+LICENSE, and the original project's NOTICE is reproduced below.
+
+--------------------------------------------------------------------------
+Derived portions in this repository
+--------------------------------------------------------------------------
+
+Ported verbatim (then adapted as listed further down):
+
+  packages/dsh-fairy-visual/src/client/**            <- fairy-visual/dsh-fairy-visual/src/client
+  packages/dsh-fairy-contracts/{index.js,client-dom.cjs,
+    client-diagnostics.cjs,diagnostics.js,types.d.ts} <- fairy-contracts/
+  packages/dsh-fairy-startup/**                      <- fairy-startup/dsh-fairy-startup
+  packages/dsh-balance-meter/**                      <- balance-meter/dsh-balance-meter
+  packages/dsh-fairy-voice/**                        <- fairy-voice/dsh-fairy-voice
+  packages/dsh-browser-dock/**                       <- browser-dock/dsh-browser-dock
+  packages/dsh-fairy-visual/src/client/style.js      <- fairy-visual .../src/client/style.js
+
+--------------------------------------------------------------------------
+Modifications made by this project
+--------------------------------------------------------------------------
+
+1. Build system: the reference builds its client bundle with tsdown and copies
+   `lib/index.iife.js`; this project builds the same sources with rollup into
+   `window.__ModuleLoader__.load({ id, factory })` CJS form (tools/build-client.mjs).
+2. Settings transport: DSH 0.2.1 no longer provides `ctx.settingsScope`, so
+   `packages/dsh-fairy-visual/src/client/scope-shim.js` supplies the same
+   `getSnapshot()/subscribe()/set()` surface over a host HTTP route
+   (`GET/PUT /dsh-fairy/settings?ns=<namespace>`) backed by JSON files in
+   `$DSH_HOME/fairy-visual/` and `$DSH_HOME/fairy-identity/`.
+3. Host halves (`src/index.js`): the reference registers settings through the
+   0.1.1 `settings` service; here each package registers its own `webServer`
+   route instead. Voice paths and the balance-meter credentials path now honour
+   `DSH_HOME` / `DSH_FAIRY_CREDENTIALS`.
+4. DOM compatibility for DSH 0.2.1 in `packages/dsh-fairy-visual/src/client/dom-adapter.js`:
+   `conversation` also matches `[data-slot="main.conversation"]`,
+   `composerTextarea` also matches `[data-composer-input]` (0.2.1 uses a
+   contenteditable div instead of a textarea), and `phaseActive` stays
+   `[data-phase="active"]` because the composer input carries its own
+   `data-phase` vocabulary (`plain`).
+5. `dsh-fairy-startup` tolerates the missing `sessions.clear()` in 0.2.1 instead
+   of failing the whole client graph.
+6. Relative contract imports are rewritten to `../../../dsh-fairy-contracts/`.
+7. Added tooling that the reference does not ship: `tools/build-client.mjs`,
+   `tools/build-all.mjs`, `tools/verify-build.mjs`, `tools/port-packages.mjs`,
+   `tools/dev-*.mjs`, `tools/cdp/**` (CDP parity/contrast/DOM audits),
+   `dev/profile/**` (isolated dev profile).
+
+--------------------------------------------------------------------------
+Original Fairy-DSH NOTICE
+--------------------------------------------------------------------------
+
+Fairy-DSH
+Copyright 2026 Chengzhibense.
+
+This repository contains original Fairy-DSH code and configuration released
+under the Apache License, Version 2.0. Third-party dependencies retain their
+own licenses; see THIRD_PARTY_NOTICES.md.
+
+Fairy, DSH, DeepSeek, Zenless Zone Zero, and related names or marks are not
+licensed by this NOTICE. See TRADEMARKS.md. Game text, official assets,
+private world data, user data, and personal corpora are intentionally not
+distributed by this repository.

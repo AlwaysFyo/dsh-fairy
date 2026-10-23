@@ -5,7 +5,11 @@
   "dependencies": {
     "dsh-fairy": "link:../../packages/dsh-fairy",
     "dsh-fairy-contracts": "link:../../packages/dsh-fairy-contracts",
-    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual"
+    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual",
+    "dsh-fairy-startup": "link:../../packages/dsh-fairy-startup",
+    "dsh-balance-meter": "link:../../packages/dsh-balance-meter",
+    "dsh-fairy-voice": "link:../../packages/dsh-fairy-voice",
+    "dsh-browser-dock": "link:../../packages/dsh-browser-dock"
   },
   "dsh": {
     "profile": {

@@ -4,3 +4,11 @@
 - insert:
     - id: fairy-visual
       name: 'dsh-fairy-visual'
+    - id: fairy-startup
+      name: 'dsh-fairy-startup'
+    - id: balance-meter
+      name: 'dsh-balance-meter'
+    - id: fairy-voice
+      name: 'dsh-fairy-voice'
+    - id: browser-dock
+      name: 'dsh-browser-dock'

@@ -101,15 +101,18 @@ const OFFICIAL_SELECTORS = Object.freeze({
   rootSurface: '[data-slot="root"]',
   sidebar: '[data-slot="sidebar"]',
   sidebarResizeHandle: '[data-side="sidebar"]',
-  // DSH 0.2.1 renders the main conversation slot as `main.conversation` and the
-  // resting session surface as `data-phase="plain"`; 0.1.1 used `conversation`
-  // and `data-phase="active"`. Keep both spellings in one selector so the same
-  // adapter drives either runtime.
+  // DSH 0.2.1 renders the main conversation slot as `main.conversation`; 0.1.1
+  // used `conversation`. Keep both spellings in one selector so the same adapter
+  // drives either runtime.
   conversation: '[data-slot="main.conversation"], [data-slot="conversation"]',
   shellOverlay: '[data-slot="shell.overlay"]',
   settingsDialog: '[data-slot="sidebar.settings"] [role="dialog"]',
   phaseHero: '[data-phase="hero"]',
-  phaseActive: '[data-phase="active"], [data-phase="plain"]',
+  // The conversation root still uses hero|active|settling in 0.2.1. The composer
+  // editor also carries `data-phase` but with its own vocabulary (e.g. `plain`),
+  // so mapping `plain` onto "active" here would make a new-session Hero look like
+  // an active conversation and hide the Hero toggle fallback.
+  phaseActive: '[data-phase="active"]',
   phaseAny: '[data-phase]',
   composerSeat: '[data-composer-seat]',
   composerCard: '[data-composer-card="true"]',
