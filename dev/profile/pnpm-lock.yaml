@@ -1,0 +1,19 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      dsh-fairy:
+        specifier: link:../../packages/dsh-fairy
+        version: link:../../packages/dsh-fairy
+      dsh-fairy-contracts:
+        specifier: link:../../packages/dsh-fairy-contracts
+        version: link:../../packages/dsh-fairy-contracts
+      dsh-fairy-visual:
+        specifier: link:../../packages/dsh-fairy-visual
+        version: link:../../packages/dsh-fairy-visual

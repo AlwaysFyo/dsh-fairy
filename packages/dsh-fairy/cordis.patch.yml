@@ -1,0 +1,6 @@
+# DSH profile patch: inserts the Fairy plugin entries into the web plugin roster.
+# One anchor package owns every row, so the market can stop/start the whole suite
+# in one click (entry disable matches by name or by bundlePatchInsertedIds).
+- insert:
+    - id: fairy-visual
+      name: 'dsh-fairy-visual'

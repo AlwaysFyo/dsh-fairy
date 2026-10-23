@@ -1,0 +1,6 @@
+# Your patch layer for this profile, applied after every bundle layer.
+# Probe profile: keep it empty unless a probe needs a config override.
+- id: ui-settings-general
+  name: "@deepseek-ai/dsh-client-ui-settings-general"
+  config:
+    welcomeNoticeVersion: 2026-09-28.1

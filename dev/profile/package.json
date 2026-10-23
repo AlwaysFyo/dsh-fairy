@@ -1,0 +1,19 @@
+{
+  "name": "dsh-profile-fairy-dev",
+  "private": true,
+  "description": "Isolated probe profile: boots the official web app plus the Fairy anchor bundle.",
+  "dependencies": {
+    "dsh-fairy": "link:../../packages/dsh-fairy",
+    "dsh-fairy-contracts": "link:../../packages/dsh-fairy-contracts",
+    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-fairy"
+      ]
+    }
+  }
+}

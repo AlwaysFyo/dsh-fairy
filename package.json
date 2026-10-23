@@ -1,0 +1,25 @@
+{
+  "name": "dsh-fairy-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.28.5",
+  "description": "Fairy theme plugin suite for DSH (ZZZ-inspired HDD skin, startup, balance meter, voice, browser dock).",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "node tools/build-all.mjs",
+    "verify": "node tools/verify-build.mjs",
+    "probe:setup": "node tools/dev-setup.mjs",
+    "probe:web": "node tools/dev-web.mjs"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "0.2.1-rc.2",
+    "@rollup/plugin-commonjs": "^29.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "rollup": "^4.65.0",
+    "ws": "^8.22.0"
+  }
+}
