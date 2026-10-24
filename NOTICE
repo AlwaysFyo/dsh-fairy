@@ -107,6 +107,13 @@ Modifications made by this project
     keeps those as defaults while adding a persisted override
     (`$DSH_HOME/fairy-voice/tts-config.json`), a reference-audio upload endpoint
     and a settings block.
+17. The voice volume slider stays adjustable while the speech engine is
+    unreachable. The reference disables both the auto-read dot and the volume
+    range whenever `/fairy-voice/status` reports unavailable, which renders as a
+    visible-but-dead control; here only the auto-read toggle is disabled. The
+    volume is a saved preference (`dsh.fairyVoice.volume`), and the control group
+    carries `data-dsh-fairy-engine-ready` plus the unavailability reason as its
+    `title`, so the disabled state explains itself on hover.
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE

@@ -50,7 +50,10 @@ test('private JSON writes are atomic, unique, and permission-restricted', async 
     const value = JSON.parse(await readFile(file, 'utf8'));
     assert.equal(value.version, 1);
     assert.ok(['first', 'second'].includes(value.value));
-    assert.equal((await stat(file)).mode & 0o777, 0o600);
+    // Windows has no POSIX permission bits: chmod is a no-op there.
+    if (process.platform !== 'win32') {
+      assert.equal((await stat(file)).mode & 0o777, 0o600);
+    }
     assert.deepEqual((await readdir(directory)).filter((name) => name.endsWith('.tmp')), []);
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -283,19 +286,18 @@ test('server handlers use explicit speech and transport boundaries', async () =>
   assert.match(source, /const localTtsTransport = createLocalTtsTransport\(/);
   assert.match(source, /const voiceBrainBoundary = createVoiceBrainServerBoundary\(/);
   assert.match(source, /http:\/\/127\.0\.0\.1:9880\/tts/);
-  const loader = source.match(/function readReferencePrompt\(\) \{[\s\S]*?\n\}/)?.[0];
+  const ttsConfigSource = await readFile(new URL('../lib/server/tts-config.js', import.meta.url), 'utf8');
+  assert.match(ttsConfigSource, /export const referencePromptText = \(config\) => \{/);
+  const loader = ttsConfigSource.match(/export const referencePromptText = \(config\) => \{[\s\S]*?\n\}/)?.[0];
   assert.ok(loader, 'reference prompt loader should be available');
-  const warnings = [];
   const sandbox = {
-    REFERENCE_PROMPT_PATH: '/synthetic/fairy_ref.txt',
+    referencePromptPath: () => '/synthetic/fairy_ref.txt',
+    readFileSyncSync() { throw Object.assign(new Error('synthetic missing reference'), { code: 'ENOENT' }); },
     REFERENCE_PROMPT_FALLBACK: 'fallback prompt',
-    diagnostics: { warn(...args) { warnings.push(args); } },
-    readFileSync() { throw Object.assign(new Error('synthetic missing reference'), { code: 'ENOENT' }); },
   };
-  vm.runInNewContext(`${loader}; globalThis.readReferencePrompt = readReferencePrompt;`, sandbox);
-  assert.equal(sandbox.readReferencePrompt(), 'fallback prompt');
-  assert.equal(warnings.length, 1);
-  sandbox.readFileSync = () => '  file prompt\n';
-  assert.equal(sandbox.readReferencePrompt(), 'file prompt');
-  assert.equal(warnings.length, 1);
+  vm.runInNewContext(`${loader.replace('export const ', 'const ')}; globalThis.readReferencePrompt = referencePromptText;`, sandbox);
+  assert.equal(sandbox.readReferencePrompt(undefined), 'fallback prompt');
+  assert.equal(sandbox.readReferencePrompt({ promptText: '  inline prompt ' }), 'inline prompt');
+  sandbox.readFileSyncSync = () => '  file prompt\n';
+  assert.equal(sandbox.readReferencePrompt({}), 'file prompt');
 });

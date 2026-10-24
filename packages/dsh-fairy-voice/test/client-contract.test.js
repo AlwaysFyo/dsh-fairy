@@ -5,25 +5,33 @@ import { readFile } from 'node:fs/promises';
 const clientPath = new URL('../lib/client.js', import.meta.url);
 const source = await readFile(clientPath, 'utf8');
 const serverSource = await readFile(new URL('../lib/index.js', import.meta.url), 'utf8');
-const canonicalClientDiagnostics = await readFile(new URL('../../../fairy-contracts/client-diagnostics.cjs', import.meta.url), 'utf8');
-const canonicalClientDom = await readFile(new URL('../../../fairy-contracts/client-dom.cjs', import.meta.url), 'utf8');
+const canonicalClientDiagnostics = normalizeEol(await readFile(new URL('../../dsh-fairy-contracts/client-diagnostics.cjs', import.meta.url), 'utf8'));
+const canonicalClientDom = normalizeEol(await readFile(new URL('../../dsh-fairy-contracts/client-dom.cjs', import.meta.url), 'utf8'));
+
+// Git may check these files out with CRLF on Windows; the byte-for-byte
+// contract is about content, not the line ending of the local checkout.
+function normalizeEol(value) {
+  return value.replace(/\r\n/g, '\n');
+}
 
 function embeddedClientDiagnostics(value) {
+  const text = normalizeEol(value);
   const begin = '// DSH_FAIRY_CLIENT_DIAGNOSTICS_BEGIN\n';
   const end = '// DSH_FAIRY_CLIENT_DIAGNOSTICS_END';
-  const start = value.indexOf(begin);
-  const finish = value.indexOf(end, start + begin.length);
+  const start = text.indexOf(begin);
+  const finish = text.indexOf(end, start + begin.length);
   assert.ok(start >= 0 && finish > start, 'embedded client diagnostics boundaries should exist');
-  return value.slice(start + begin.length, finish);
+  return text.slice(start + begin.length, finish);
 }
 
 function embeddedClientDom(value) {
+  const text = normalizeEol(value);
   const begin = '// DSH_FAIRY_CLIENT_DOM_BEGIN\n';
   const end = '// DSH_FAIRY_CLIENT_DOM_END';
-  const start = value.indexOf(begin);
-  const finish = value.indexOf(end, start + begin.length);
+  const start = text.indexOf(begin);
+  const finish = text.indexOf(end, start + begin.length);
   assert.ok(start >= 0 && finish > start, 'embedded client DOM contracts boundaries should exist');
-  return value.slice(start + begin.length, finish);
+  return text.slice(start + begin.length, finish);
 }
 
 test('embeds the canonical client diagnostics byte for byte', () => {
@@ -411,7 +419,11 @@ test('only long final answers use the optional local voice-brief bridge', () => 
   assert.match(source, /VoiceBrainSection/);
   assert.match(source, /function requestVoiceBrainConfig\(payload\)/);
   assert.match(source, /无法连接本地语音简报服务。请重新加载 DSH 后重试。/);
-  assert.match(source, /settings\.section/);
+  // The voice panel no longer owns a settings.section of its own: it mounts
+  // inside the visual plugin's Fairy console instead.
+  assert.doesNotMatch(source, /settings\.section/);
+  assert.match(source, /data-dsh-fairy-hub-voice="true"/);
+  assert.match(source, /client\.createRoot\(container\)/);
   assert.match(source, /deepseek-v4-flash/);
   assert.match(source, /The visible answer is already authoritative/);
 });

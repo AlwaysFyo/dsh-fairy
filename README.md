@@ -167,6 +167,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 设置页人设区块 | textarea `maxLength = -1`（不限字数）；真实输入 17 字并点「保存人设」→ `/dsh-fairy/persona` 立刻报告 `source:custom`、`chars:61`，提示「已保存，下一条消息生效」 |
 | TTS API Key | 真实 UI 输入并保存 → 宿主 `apiKeySet:true`、`apiKeyMask:••••••••7788`、响应正文无明文；mock 侧 `/__auth` 收到 `Bearer sk-…`（探活与合成两条都带）；点「清除 API Key」→ `apiKeySet:false`、请求不再带该头；15 项不变量由 `tools/cdp/tts-auth-check.mjs` 全绿 |
 | TTS 双协议 | 协议下拉切 `yovoice` 后出现模型/音色字段、「读取引擎模型/音色」从 mock 拉到 `mock-index-tts2` + `mock-voice-001`；「试听」返回 `audio/wav`（38444 B），浏览器 `decodeAudioData` 解码 43 564 B 后 `createBufferSource` 播放并提示「已播放试听」；切回 `gpt-sovits` 后上传控件恢复、模型字段消失；13 项不变量由 `tools/cdp/yovoice-check.mjs` 全绿 |
+| 朗读控制胶囊（两段） | 左段红点 = 自动朗读开关，右段波形 = 语音音量并同时是拖动热区（原生 `range` 是 `opacity:0` 的覆盖层）。TTS 未就绪时：音量仍可拖（`1 → 0.75`、30 → 22 根亮条、`localStorage dsh.fairyVoice.volume=0.75`，刷新后保持），仅自动朗读禁用；胶囊 `data-dsh-fairy-engine-ready="false"`、`title` 显示不可用原因 |
 | 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
 | 右侧边栏原始承载面 | 按用户要求（m06540）撤回右栏蒙板、全屏网格/底色和三态 `ResizeObserver`：参考项目基于 0.1.1、没有 0.2.1 的右栏全屏，不能据此自绘；恢复原生 `_tabHost` 的 `background:var(--dsw-alias-bg-base)`，仅保留右栏 1px 分界线。停靠面板 `[1122,0,918,1200]`，全屏 `[0,0,2040,1200]`；全屏实测深色 `rgb(7,16,28)`、浅色 `rgb(247,250,252)`，均为纯色、无网格，底层对话不再透出 |
 
