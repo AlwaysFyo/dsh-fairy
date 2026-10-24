@@ -97,6 +97,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 参考侧栏无「插件 / 自动化任务」行、设置行为「设置」42px | 参考实例的 profile 未启用这些面板；本实例走官方 panellist 布局（HDD 开/关均一致，非主题改动） |
 | 余额卡 `unavailable` | 0.2.1 的 `.credentials.yaml` 是结构化 `records:` 格式，没有参考实现读取的扁平 `DEEPSEEK_API_KEY`；把结构里的平台 grant token 直接当 API key 请求 `api.deepseek.com/user/balance` 会 401（已实测），所以这是凭据形态问题，参考实例同样 unavailable |
 | 朗读按钮存在但不出声 | 需要外部本地 TTS 与参考音色样本，仓库不提供；**链路本身已验证**（见 [docs/TTS.md](docs/TTS.md) 与 `tools/cdp/voice-e2e.mjs`） |
+| 我们的模型控件是 46×28 图标，参考是 220×28 带模型名的控件 | 参考那个控件来自它 profile 里的 `dsh-reasoning-effort`（`re-model-root`）；0.2.1 官方的模型入口就是图标按钮（`_7KE1Ra_trigger`，DOM 里没有文字标签），布局带一致但宽度不可比 |
 
 ### 已验证的行为（真实浏览器 + 数值断言）
 
@@ -109,6 +110,12 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | `prefers-reduced-motion: reduce` | 静止与切换后过渡帧均为 0，glitch 动画不挂 |
 | 语音链路（mock TTS） | `/fairy-voice/status` → `available:true`；`/tts` → `200 audio/pcm` 53 760 B；浏览器解码 0.6 s @32 kHz 实际出声 |
 | 市场式安装（tarball） | 7 个 `pnpm pack` 产物装进全新 `DSH_HOME` 后：`--dump-config` 出现五行，五个 client bundle 全部进 roster，voice 宿主可用 |
+| 市场式一键停/起 | 把锚包 patch 插入的五个 id 全部 `disabled: true` 后重启：roster 里不再有 `dsh-fairy-visual`，`/dsh-fairy/diag` 返回 **404**，日志无 fairy 相关 warning；去掉该层再启动即恢复（roster 命中、`diag.ok=true`） |
+| 眼睛大小 / 动画速度滑条 | 真实拖拽后落盘（`mascotScale 0.73`），`#dsh-fairy-root` 上 `--dsh-fairy-mascot-scale: 0.76`、`data-dsh-fairy-animation-rate=1.5` |
+| 选择模型 | 点击 → 「模型与推理等级」菜单 → 「模型」行 → 12 个 `menuitemradio`（两个 provider 组）→ 选中后按钮 `aria-label` 变为所选项 |
+| 会话头部顺序与间距 | 2040/1680/1440/1280 四档一致：`统计 → H.D.D → 日间模式 → 用文件资源管理器打开 → 更多操作 → 打开右侧边栏`，间距 `8 | 8 | 0 | 8`（0 是官方两枚图标按钮的自身间距） |
+| 空白会话（hero）兜底开关 | 与官方 `打开右侧边栏` 按钮 **overlap 0**（2040/1440/1280），兜底组停在 corner 按钮左侧 8px |
+| 模型控件位置 | 右翼底行、发送按钮左侧 8px（`rel [1490,82,46,28]` vs `send rel [1544,82]`），与参考同一布局带 |
 
 ### 设置面板的打开前提
 
@@ -150,5 +157,7 @@ node tools/pin-versions.mjs
 - [x] Voice 端到端链路（mock TTS 已验证；换成真实模型只需改 `DSH_FAIRY_TTS_URL`）
 - [x] 市场安装路径（tarball 装进全新 `DSH_HOME`，五个插件全部就位）
 - [x] 中英 i18n 与 `prefers-reduced-motion` 的逐项回归
+- [x] 一眼可见的三个 UI 缺陷：眼睛大小滑条不生效、输入框选不了模型、头部控件位置/间距
+- [x] 市场式一键停/起（禁用锚包插入的五个 id → 全部下线；恢复后重新上线）
 - [ ] 接真实 TTS（GPT-SoVITS 零改动，或 IndexTTS2 + 适配器）——见 [docs/TTS.md](docs/TTS.md)
-- [ ] 真实 profile 上的「市场一键停/起」验证（需要把包装进 catalog）
+- [ ] 真正走一遍插件市场的 catalog 安装（当前用 tarball + patch 覆盖层等价验证）

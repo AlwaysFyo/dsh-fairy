@@ -55,7 +55,22 @@ function install(_lifecycle = null, { Toggle, useController }) {
             setPositioned(false);
             return;
           }
-          host.style.left = Math.round(rect.right - host.offsetWidth - 28) + 'px';
+          // 0.2.1 adds stock controls to the header corner (open right sidebar).
+          // The reference sized this fallback against a header that had none, so
+          // the toggle covered the corner button on a blank conversation. Stop at
+          // the corner run, keeping the header's 8px rhythm.
+          const cornerLeft = (() => {
+            const corner = document.querySelector('[class*="headerCorner"]');
+            if (!corner) return null;
+            const cornerRect = corner.getBoundingClientRect();
+            if (cornerRect.width < 1 || cornerRect.height < 1) return null;
+            return cornerRect.left;
+          })();
+          const hostWidth = host.offsetWidth || 0;
+          const rightEdge = cornerLeft === null
+            ? rect.right - 28
+            : Math.min(rect.right - 28, cornerLeft - 8);
+          host.style.left = Math.round(rightEdge - hostWidth) + 'px';
           // Match the active conversation header: 44px header minus the
           // 28px toggle gives the same 8px top inset used by its flex layout.
           host.style.top = Math.round(rect.top + 8) + 'px';

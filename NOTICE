@@ -54,6 +54,29 @@ Modifications made by this project
    `tools/build-all.mjs`, `tools/verify-build.mjs`, `tools/port-packages.mjs`,
    `tools/dev-*.mjs`, `tools/cdp/**` (CDP parity/contrast/DOM audits),
    `dev/profile/**` (isolated dev profile).
+8. Session selection source: the reference reads
+   `sessions.list.getSnapshot().current`, which no longer exists in 0.2.1 (the
+   snapshot only carries `ids`/`byId`/`phase`/`projectionsBySession`), so the
+   handover never fired and activity stayed `normal`. `session-source.js` reads
+   `uiSession.current` instead and falls back to the sessions store.
+9. Model-picker stacking: the mascot animation-speed rail is an invisible
+   `input[type=range]` spanning the same band as the native model button and
+   swallowed every click. The reference reproduces this overlap, so the fix here
+   is a stacking change only (the picker is lifted above the rail; geometry is
+   untouched).
+10. Model-picker ownership: the reference clones the native model control and
+    hides the original (`-native-` marker). 0.2.1 exposes a single node carrying
+    both markers, which the hide rule erased entirely, so a session could not
+    change model. `style.js` restores that node when it is the only copy and
+    anchors it to the send button (right wing, bottom row) instead of the 0.1.1
+    clone slot in the left wing.
+11. Header controls: the Fairy controls are placed before the stock header
+    buttons (owner request) with the header's 8px rhythm, and the blank-session
+    fallback toggle stops short of the 0.2.1 header-corner button instead of
+    covering it.
+12. Mascot preferences (`mascotScale`, `mascotAnimationSpeed`) are part of the
+    stored schema; the first port dropped them on write, which silently reset the
+    scale slider after every drag.
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE
