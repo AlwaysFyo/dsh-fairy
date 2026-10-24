@@ -366,14 +366,16 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   // background entirely). No backdrop blur: the grid stays readable.
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(4,12,22,.58)!important}`);
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(255,255,255,.62)!important}`);
-  // Owner (m06013): in 全屏 the panel covers the whole window, and stock paints
-  // the pane (`_tabHost`) opaque — our background unification made that
-  // transparent, so the conversation bled through it. Re-paint the HDD canvas
-  // on the panel instead of a flat colour: substrate + the same 48px grid the
-  // fixed `.dsh-hdd-fx` layer draws (lines at .042 alpha behind an opacity .7
-  // layer), on top of the content, so the takeover reads as the app background.
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#07101c!important;background-image:linear-gradient(rgba(100,210,255,.029) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(100,210,255,.029) 1.5px,transparent 1.5px)!important;background-size:48px 48px!important;background-position:0 0!important}`);
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#f7fafc!important;background-image:linear-gradient(rgba(34,126,166,.038) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(34,126,166,.038) 1.5px,transparent 1.5px)!important}`);
+  // Owner (m06013, m06463): in 全屏 the panel covers the whole window and stock
+  // paints that pane as an OPAQUE sheet (measured: 255,255,255 across the whole
+  // window with the HDD theme off). Painting the canvas colour there made the
+  // takeover indistinguishable from the app background — it read as "no
+  // background at all", and the display area looked wrong. So give the
+  // fullscreen pane its own surface: a solid themed sheet one step off the
+  // canvas (`--dsw-alias-bg-layer-1`), a hairline edge, and the 48px grid kept
+  // at a whisper so the sheet still belongs to the HDD language.
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#0a1828!important;background-image:linear-gradient(rgba(100,210,255,.03) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(100,210,255,.03) 1.5px,transparent 1.5px)!important;background-size:48px 48px!important;background-position:0 0!important;box-shadow:inset 0 0 0 1px rgba(126,220,255,.18)!important}`);
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#fff!important;background-image:linear-gradient(rgba(34,126,166,.05) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(34,126,166,.05) 1.5px,transparent 1.5px)!important;box-shadow:inset 0 0 0 1px rgba(32,111,149,.22)!important}`);
   // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
   // that clashes with the HDD matte. Keep its readability but blend it with
   // the Fairy materials: translucent navy glass + a faint dot texture + the
