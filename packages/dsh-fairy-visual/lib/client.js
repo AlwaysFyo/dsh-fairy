@@ -331,8 +331,14 @@ function requireScopeShim () {
 	    return snapshot.value
 	  };
 
+	  const transportError = (error) =>
+	    new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error && error.message ? ` [${error.message}]` : ''}`);
+
 	  const load = () =>
-	    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' } })
+	    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' }, cache: 'no-store' })
+	      .catch((error) => {
+	        throw transportError(error)
+	      })
 	      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
 	      .then((payload) => (disposed ? snapshot.value : adopt(readValue(payload))))
 	      .catch((error) => {
@@ -353,6 +359,9 @@ function requireScopeShim () {
 	      headers: { 'content-type': 'application/json', accept: 'application/json' },
 	      body: JSON.stringify({ value: next }),
 	    })
+	      .catch((error) => {
+	        throw transportError(error)
+	      })
 	      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
 	      .then((payload) => adopt(readValue(payload) ?? next))
 	      .catch((error) => {
@@ -8401,9 +8410,20 @@ function requireClient () {
 	    }
 
 	    const jsonFetch = async (path, options) => {
-	      const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+	      let response;
+	      try {
+	        response = await fetch(path, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+	      } catch (error) {
+	        // A page loaded from an instance that has since restarted keeps its
+	        // sockets and its per-boot cookie, so every write fails at the transport
+	        // layer with a bare "Failed to fetch" — say what to do about it.
+	        throw new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error?.message ? ` [${error.message}]` : ''}`);
+	      }
 	      const body = await response.json().catch(() => null);
-	      if (!response.ok) throw new Error(body?.error?.message || body?.error || `HTTP ${response.status}`);
+	      if (!response.ok) {
+	        if (response.status === 404) throw new Error('宿主未注册该路由（插件可能没装全，或实例需要重启）');
+	        throw new Error(body?.error?.message || body?.error || `HTTP ${response.status}`);
+	      }
 	      return body;
 	    };
 
@@ -8435,7 +8455,12 @@ function requireClient () {
 	        let cancelled = false;
 	        jsonFetch('/fairy-voice/config')
 	          .then((body) => { if (!cancelled) { applyConfig(body?.value); setState('ready'); } })
-	          .catch((error) => { if (!cancelled) { setState('missing'); setNote(String(error.message || error)); } });
+	          .catch((error) => {
+	            if (cancelled) return;
+	            const message = String(error?.message || error);
+	            setState('ready');
+	            setNote(`读取当前配置失败：${message}`);
+	          });
 	        return () => { cancelled = true; };
 	      }, []);
 	      const save = async () => {

@@ -58,8 +58,14 @@ function createSettingsHandle(namespace) {
     return snapshot.value
   }
 
+  const transportError = (error) =>
+    new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error && error.message ? ` [${error.message}]` : ''}`)
+
   const load = () =>
-    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' } })
+    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' }, cache: 'no-store' })
+      .catch((error) => {
+        throw transportError(error)
+      })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
       .then((payload) => (disposed ? snapshot.value : adopt(readValue(payload))))
       .catch((error) => {
@@ -80,6 +86,9 @@ function createSettingsHandle(namespace) {
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ value: next }),
     })
+      .catch((error) => {
+        throw transportError(error)
+      })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
       .then((payload) => adopt(readValue(payload) ?? next))
       .catch((error) => {
