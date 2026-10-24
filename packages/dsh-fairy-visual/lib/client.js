@@ -323,6 +323,11 @@ function requireScopeShim () {
 	  const adopt = (value) => {
 	    snapshot = { value: value && typeof value === 'object' ? value : {} };
 	    emit();
+	    // Broadcast on the document so sibling plugins (balance meter, voice…) can
+	    // follow the visual switch without polling the settings route.
+	    if (typeof document !== 'undefined' && typeof CustomEvent === 'function' && document.documentElement) {
+	      document.documentElement.dispatchEvent(new CustomEvent('dsh-fairy-settings', { bubbles: false, detail: { namespace, value: snapshot.value } }));
+	    }
 	    return snapshot.value
 	  };
 

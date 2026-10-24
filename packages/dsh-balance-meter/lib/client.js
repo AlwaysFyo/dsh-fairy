@@ -190,8 +190,21 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
     function BalanceMeter({ sessions }) {
       const [data, setData] = React.useState(null);
       const [compact, setCompact] = React.useState(false);
-      const [hddMode, setHddMode] = React.useState(readHddMode);
+      const [visual, setVisual] = React.useState(() => document.documentElement.hasAttribute('data-dsh-fairy-visual'));
       const rootRef = React.useRef(null);
+
+      React.useEffect(() => {
+        // The visual plugin dispatches `dsh-fairy-settings` on <html> whenever it
+        // adopts a settings snapshot (load or write). Hiding with the visual
+        // keeps the sidebar clean when HDD is off, matching the reference.
+        const sync = (event) => {
+          if (event?.detail?.namespace && event.detail.namespace !== 'fairy-visual') return;
+          setVisual(Boolean(event?.detail?.value ? event.detail.value.enabled : document.documentElement.hasAttribute('data-dsh-fairy-visual')));
+        };
+        document.documentElement.addEventListener('dsh-fairy-settings', sync);
+        sync();
+        return () => document.documentElement.removeEventListener('dsh-fairy-settings', sync);
+      }, []);
 
       React.useEffect(() => {
         const poller = createBalancePoller(setData, sessions);
@@ -201,11 +214,13 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
 
       React.useEffect(() => {
         if (typeof MutationObserver === 'undefined') return undefined;
-        const syncMode = () => setHddMode(readHddMode());
+        // Fallback for reloads where the visual plugin loads after this meter:
+        // the attribute flip still syncs the hidden state.
+        const syncMode = () => setVisual(document.documentElement.hasAttribute('data-dsh-fairy-visual'));
         const observer = new MutationObserver(syncMode);
         observer.observe(document.documentElement, {
           attributes: true,
-          attributeFilter: ['data-dsh-fairy-mode'],
+          attributeFilter: ['data-dsh-fairy-visual', 'data-dsh-fairy-mode'],
         });
         syncMode();
         return () => observer.disconnect();
@@ -234,8 +249,9 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
       const costText = cost != null ? formatCny(cost) : '…';
       const pricingDate = typeof pricing?.verifiedDate === 'string' ? pricing.verifiedDate : '待核验';
       const bandText = pricing?.band === 'peak' ? '峰时' : pricing?.band === 'offPeak' ? '谷时' : '未知时段';
-      const dailyLabel = hddMode ? '今日电量' : '今日token';
-      const dailySummaryLabel = hddMode ? '今日电量' : '今日 token';
+      if (!visual) return null;
+      const dailyLabel = document.documentElement.getAttribute('data-dsh-fairy-mode') === 'hdd' ? '今日电量' : '今日token';
+      const dailySummaryLabel = dailyLabel === '今日电量' ? '今日电量' : '今日 token';
       const summary = `DeepSeek 余额 ${balanceText}，${dailySummaryLabel} ${todayText}，今日估算 ${costText}；计价源 DeepSeek V4 Flash 官方价 ${pricingDate}，当前${bandText}，汇率按 1 USD = ¥${pricing?.usdToCnyEstimate ?? '…'}`;
       const box = {
         margin: compact ? '0' : '8px', padding: compact ? '0' : '7px 10px',
