@@ -331,7 +331,7 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
 /* Open-ring glyph for the day/night toggle: a uniform 1.5px annulus with a 55deg
    notch and no rotation. Replaces the reference border arc, whose stroke Chrome
    rounds per side (measured 1px top vs 1.7px elsewhere). */
-.dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important;border:0!important;border-radius:0!important;transform:none!important;background:radial-gradient(circle,transparent 0 4px,currentColor 4px 5.5px,transparent 5.5px)!important;-webkit-mask:conic-gradient(from -118deg,#000 0 305deg,transparent 305deg 360deg)!important;mask:conic-gradient(from -118deg,#000 0 305deg,transparent 305deg 360deg)!important}
+.dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important;border:0!important;border-radius:0!important;transform:none!important;background:radial-gradient(circle,transparent 0 4px,currentColor 4px 5.5px,transparent 5.5px)!important;-webkit-mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important;mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important}
 .dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
