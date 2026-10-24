@@ -804,16 +804,16 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   //     transparent; Chrome rounds border widths per side, so the arc renders with
   //     uneven stroke and reads as an irregular open ring. Draw one even SVG
   //     crescent at the same footprint, and keep the CSS sun for light mode.
-  appendSection('header-controls', `html[data-dsh-fairy-visual] .dsh-fairy-toggle-group{height:28px!important;gap:2px!important;border:0!important;border-radius:8px!important;background:transparent!important;overflow:visible!important}
-html[data-dsh-fairy-visual] .dsh-fairy-toggle,html[data-dsh-fairy-visual] .dsh-fairy-theme-toggle,html[data-dsh-fairy-visual] .dsh-fairy-session-metrics-button{position:relative!important;display:grid!important;place-items:center!important;width:28px!important;height:28px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--dsw-alias-label-secondary)!important;flex:0 0 auto!important;font-size:0!important}
-html[data-dsh-fairy-visual] .dsh-fairy-toggle:hover,html[data-dsh-fairy-visual] .dsh-fairy-theme-toggle:hover,html[data-dsh-fairy-visual] .dsh-fairy-session-metrics-button:hover,html[data-dsh-fairy-visual] .dsh-fairy-toggle[data-on="true"],html[data-dsh-fairy-visual] .dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important;color:var(--dsw-alias-label-primary)!important}
-html[data-dsh-fairy-visual] .dsh-fairy-toggle::before{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;opacity:.85}
-html[data-dsh-fairy-visual] .dsh-fairy-toggle .dsh-fairy-dot{position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-label-tertiary);box-shadow:none}
-html[data-dsh-fairy-visual] .dsh-fairy-toggle[data-on="true"] .dsh-fairy-dot{background:#38bdf8;box-shadow:0 0 6px #38bdf8}
-html[data-dsh-fairy-visual] .dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:16px!important;height:16px!important;border:0!important;border-radius:0!important;transform:none!important;background:none!important}
-html[data-dsh-fairy-visual] .dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}
-html[data-dsh-fairy-visual] .dsh-fairy-theme-glyph,html[data-dsh-fairy-visual] .dsh-fairy-metrics-glyph{display:block;width:16px;height:16px;fill:currentColor}
-html[data-dsh-fairy-visual] .dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-glyph{display:none}`);
+  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important;gap:2px!important;border:0!important;border-radius:8px!important;background:transparent!important;overflow:visible!important}
+.dsh-fairy-toggle,.dsh-fairy-theme-toggle,.dsh-fairy-session-metrics-button{position:relative!important;display:grid!important;place-items:center!important;width:28px!important;height:28px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--dsw-alias-label-secondary)!important;flex:0 0 auto!important;font-size:0!important}
+.dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover,.dsh-fairy-session-metrics-button:hover,.dsh-fairy-toggle[data-on="true"],.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important;color:var(--dsw-alias-label-primary)!important}
+.dsh-fairy-toggle::before{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;opacity:.85}
+.dsh-fairy-toggle .dsh-fairy-dot{position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-label-tertiary);box-shadow:none}
+.dsh-fairy-toggle[data-on="true"] .dsh-fairy-dot{background:#38bdf8;box-shadow:0 0 6px #38bdf8}
+.dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:16px!important;height:16px!important;border:0!important;border-radius:0!important;transform:none!important;background:none!important}
+.dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}
+.dsh-fairy-theme-glyph,.dsh-fairy-metrics-glyph{display:block;width:16px;height:16px;fill:currentColor}
+.dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-glyph{display:none}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
