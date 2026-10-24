@@ -867,6 +867,14 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   // background entirely). No backdrop blur: the grid stays readable.
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(4,12,22,.58)!important}`);
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(255,255,255,.62)!important}`);
+  // Owner (m06013): in 全屏 the panel covers the whole window, and stock paints
+  // the pane (`_tabHost`) opaque — our background unification made that
+  // transparent, so the conversation bled through it. Re-paint the HDD canvas
+  // on the panel instead of a flat colour: substrate + the same 48px grid the
+  // fixed `.dsh-hdd-fx` layer draws (lines at .042 alpha behind an opacity .7
+  // layer), on top of the content, so the takeover reads as the app background.
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#07101c!important;background-image:linear-gradient(rgba(100,210,255,.029) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(100,210,255,.029) 1.5px,transparent 1.5px)!important;background-size:48px 48px!important;background-position:0 0!important}`);
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#f7fafc!important;background-image:linear-gradient(rgba(34,126,166,.038) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(34,126,166,.038) 1.5px,transparent 1.5px)!important}`);
   // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
   // that clashes with the HDD matte. Keep its readability but blend it with
   // the Fairy materials: translucent navy glass + a faint dot texture + the
