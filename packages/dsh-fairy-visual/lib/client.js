@@ -792,16 +792,18 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   appendSection('header-order', `html[data-dsh-fairy-visual] .dsh-fairy-toggle-group{margin-right:8px!important}`);
   appendSection('composer', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{left:auto!important;top:auto!important;right:calc(var(--dsh-fairy-composer-wing) + 48px)!important;bottom:18px!important;width:auto!important;min-width:0!important;max-width:220px!important;z-index:20!important}@media(max-width:900px){html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{right:180px!important;max-width:176px!important}}`);
 
-  // Owner feedback round 4 — SIZE ONLY.
-  // The reference sizes these three controls from their labels (52 / 68 / 30 px wide).
-  // The owner asked them to be smaller so they read at the stock header height, and
-  // explicitly NOT to change what they contain, so only the box is tightened here:
-  // the labels, the pill shapes and the stock day/night crescent all stay as the
-  // reference draws them.
-  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important}
-.dsh-fairy-toggle{height:26px!important;padding:0 7px 0 8px!important;gap:5px!important;font-size:11px!important}
-.dsh-fairy-theme-toggle{width:26px!important;height:26px!important}
-.dsh-fairy-session-metrics-button{height:26px!important;padding:0 8px!important;font-size:11px!important;line-height:1!important}`);
+  // Owner feedback round 4 — match the stock header buttons, content untouched.
+  // Measured stock metrics: `OMoRSG_main` is 23x28 with padding 4px 5px, font 11px,
+  // line-height 16px, no border; `更多操作` / `打开右侧边栏` are 28x28, radius 8,
+  // flat (transparent background, no border). Our controls still sat inside the
+  // reference's 1px bordered 999px pill, which is what read as "too big". Flatten
+  // the group and size each control like the stock ghost buttons; the labels, the
+  // dot and the reference day/night crescent are unchanged.
+  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important;gap:2px!important;border:0!important;border-radius:8px!important;background:transparent!important}
+.dsh-fairy-toggle{height:28px!important;padding:0 5px!important;gap:5px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important}
+.dsh-fairy-theme-toggle{width:28px!important;height:28px!important;border-radius:8px!important}
+.dsh-fairy-session-metrics-button{height:28px!important;padding:0 6px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important}
+.dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover:not(:disabled),.dsh-fairy-session-metrics-button:hover,.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
