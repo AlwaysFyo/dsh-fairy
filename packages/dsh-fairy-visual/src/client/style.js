@@ -58,7 +58,7 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // The mascot runtime mounts its real visual as the stage's direct
   // #dsh-fairy-root child. Move that rendered projection, not the outer stage
   // geometry box used for sidebar alignment and lifecycle ownership.
-  appendSection('stage-and-mascot', `.dsh-fairy-stage>[data-dsh-fairy-mascot-root="true"]{top:-20px}`);
+  appendSection('stage-and-mascot', `.dsh-fairy-stage>[data-dsh-fairy-mascot-root="true"]{top:40px}`);
   appendSection('hero', `html[data-dsh-fairy-visual] body,html[data-dsh-fairy-visual] body :where(*){font-weight:800!important}html[data-dsh-fairy-visual] body :where(pre,code,kbd,samp),html[data-dsh-fairy-visual] body :where(pre,code,kbd,samp) *{font-weight:400!important}html[data-dsh-fairy-visual] body :where(.dsh-fairy-hero-main,.dsh-fairy-mark-title,.dsh-fairy-toggle){font-weight:750!important}`);
 
   appendSection('sidebar', `html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar{width:12px!important;transition:opacity 180ms cubic-bezier(.22,.61,.36,1)}html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar-thumb{width:6px!important}html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar[data-idle="true"]{opacity:0;pointer-events:none;transition-timing-function:cubic-bezier(.4,0,.2,1)}`);
