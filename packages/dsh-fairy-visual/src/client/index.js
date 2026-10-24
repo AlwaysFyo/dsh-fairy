@@ -183,9 +183,8 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
             'data-on': String(on),
             'aria-pressed': String(on),
             'aria-label': on ? '关闭 H.D.D 视觉' : '启用 H.D.D 视觉',
-            title: 'H.D.D 视觉',
             onClick: () => save(controller, 'enabled', !on),
-            children: [jsx('span', { className: 'dsh-fairy-dot' })],
+            children: [jsx('span', { className: 'dsh-fairy-dot' }), 'H.D.D'],
           }),
           jsx('button', {
             type: 'button',
@@ -195,18 +194,7 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
             'aria-label': theme === 'dark' ? '切换到日间模式' : '切换到夜间模式',
             title: theme === 'dark' ? '切换到日间模式' : '切换到夜间模式',
             onClick: () => save(controller, 'theme', theme === 'dark' ? 'light' : 'dark'),
-            children: jsx('span', {
-              className: 'dsh-fairy-theme-icon',
-              'aria-hidden': 'true',
-              children: jsx('svg', {
-                className: 'dsh-fairy-theme-glyph',
-                viewBox: '0 0 16 16',
-                width: 16,
-                height: 16,
-                'aria-hidden': 'true',
-                children: jsx('path', { d: 'M9.9 1.3A6.9 6.9 0 1 0 14.7 12 5.7 5.7 0 0 1 9.9 1.3Z' }),
-              }),
-            }),
+            children: jsx('span', { className: 'dsh-fairy-theme-icon', 'aria-hidden': 'true' }),
           }),
         ],
       });
@@ -821,21 +809,8 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
           className: 'dsh-fairy-session-metrics-button',
           'aria-expanded': open,
           'aria-controls': panelId,
-          'aria-label': '会话统计',
-          title: '会话统计',
           onClick: () => setOpen((value) => !value),
-          children: jsx('svg', {
-            className: 'dsh-fairy-metrics-glyph',
-            viewBox: '0 0 16 16',
-            width: 16,
-            height: 16,
-            'aria-hidden': 'true',
-            children: [
-              jsx('rect', { x: 2.8, y: 8.6, width: 2.6, height: 4.6, rx: 1.2 }),
-              jsx('rect', { x: 6.7, y: 5.4, width: 2.6, height: 7.8, rx: 1.2 }),
-              jsx('rect', { x: 10.6, y: 2.6, width: 2.6, height: 10.6, rx: 1.2 }),
-            ],
-          }),
+          children: '统计',
         }),
         open ? jsx('div', { ref: panelRef, id: panelId, className: 'dsh-fairy-session-metrics-panel', role: 'dialog', 'aria-label': '会话统计', children: statItems.length ? statItems.map((item, index) => jsx('div', { className: 'dsh-fairy-session-metrics-item', children: item }, `${index}:${item}`)) : '暂无会话统计' }) : null,
       ] });

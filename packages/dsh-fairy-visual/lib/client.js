@@ -792,28 +792,16 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   appendSection('header-order', `html[data-dsh-fairy-visual] .dsh-fairy-toggle-group{margin-right:8px!important}`);
   appendSection('composer', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{left:auto!important;top:auto!important;right:calc(var(--dsh-fairy-composer-wing) + 48px)!important;bottom:18px!important;width:auto!important;min-width:0!important;max-width:220px!important;z-index:20!important}@media(max-width:900px){html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{right:180px!important;max-width:176px!important}}`);
 
-  // Owner feedback round 4.
-  // (1) Size: our trio (H.D.D / day-night / stats) rendered as 52-100px pills on a
-  //     28px box, next to stock ghost icon buttons that are 28x28 with an 8px
-  //     radius. Collapse all three onto the stock metrics so the run reads as one
-  //     row of equal buttons; labels move to aria-label/title.
-  // (2) Vertical: the blank-conversation fallback used a hard-coded 8px top inset
-  //     while the stock corner button is centred in the 44px header (top 11px), so
-  //     the pair sat 2px high. The host now borrows the corner button's own top.
-  // (3) Glyph: the reference draws its crescent as a 1.7px border with the top edge
-  //     transparent; Chrome rounds border widths per side, so the arc renders with
-  //     uneven stroke and reads as an irregular open ring. Draw one even SVG
-  //     crescent at the same footprint, and keep the CSS sun for light mode.
-  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important;gap:2px!important;border:0!important;border-radius:8px!important;background:transparent!important;overflow:visible!important}
-.dsh-fairy-toggle,.dsh-fairy-theme-toggle,.dsh-fairy-session-metrics-button{position:relative!important;display:grid!important;place-items:center!important;width:28px!important;height:28px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--dsw-alias-label-secondary)!important;flex:0 0 auto!important;font-size:0!important}
-.dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover,.dsh-fairy-session-metrics-button:hover,.dsh-fairy-toggle[data-on="true"],.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important;color:var(--dsw-alias-label-primary)!important}
-.dsh-fairy-toggle::before{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;opacity:.85}
-.dsh-fairy-toggle .dsh-fairy-dot{position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-label-tertiary);box-shadow:none}
-.dsh-fairy-toggle[data-on="true"] .dsh-fairy-dot{background:#38bdf8;box-shadow:0 0 6px #38bdf8}
-.dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:16px!important;height:16px!important;border:0!important;border-radius:0!important;transform:none!important;background:none!important}
-.dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}
-.dsh-fairy-theme-glyph,.dsh-fairy-metrics-glyph{display:block;width:16px;height:16px;fill:currentColor}
-.dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-glyph{display:none}`);
+  // Owner feedback round 4 — SIZE ONLY.
+  // The reference sizes these three controls from their labels (52 / 68 / 30 px wide).
+  // The owner asked them to be smaller so they read at the stock header height, and
+  // explicitly NOT to change what they contain, so only the box is tightened here:
+  // the labels, the pill shapes and the stock day/night crescent all stay as the
+  // reference draws them.
+  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important}
+.dsh-fairy-toggle{height:26px!important;padding:0 7px 0 8px!important;gap:5px!important;font-size:11px!important}
+.dsh-fairy-theme-toggle{width:26px!important;height:26px!important}
+.dsh-fairy-session-metrics-button{height:26px!important;padding:0 8px!important;font-size:11px!important;line-height:1!important}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
@@ -7615,9 +7603,8 @@ function requireClient () {
 	            'data-on': String(on),
 	            'aria-pressed': String(on),
 	            'aria-label': on ? '关闭 H.D.D 视觉' : '启用 H.D.D 视觉',
-	            title: 'H.D.D 视觉',
 	            onClick: () => save(controller, 'enabled', !on),
-	            children: [jsx('span', { className: 'dsh-fairy-dot' })],
+	            children: [jsx('span', { className: 'dsh-fairy-dot' }), 'H.D.D'],
 	          }),
 	          jsx('button', {
 	            type: 'button',
@@ -7627,18 +7614,7 @@ function requireClient () {
 	            'aria-label': theme === 'dark' ? '切换到日间模式' : '切换到夜间模式',
 	            title: theme === 'dark' ? '切换到日间模式' : '切换到夜间模式',
 	            onClick: () => save(controller, 'theme', theme === 'dark' ? 'light' : 'dark'),
-	            children: jsx('span', {
-	              className: 'dsh-fairy-theme-icon',
-	              'aria-hidden': 'true',
-	              children: jsx('svg', {
-	                className: 'dsh-fairy-theme-glyph',
-	                viewBox: '0 0 16 16',
-	                width: 16,
-	                height: 16,
-	                'aria-hidden': 'true',
-	                children: jsx('path', { d: 'M9.9 1.3A6.9 6.9 0 1 0 14.7 12 5.7 5.7 0 0 1 9.9 1.3Z' }),
-	              }),
-	            }),
+	            children: jsx('span', { className: 'dsh-fairy-theme-icon', 'aria-hidden': 'true' }),
 	          }),
 	        ],
 	      });
@@ -8253,21 +8229,8 @@ function requireClient () {
 	          className: 'dsh-fairy-session-metrics-button',
 	          'aria-expanded': open,
 	          'aria-controls': panelId,
-	          'aria-label': '会话统计',
-	          title: '会话统计',
 	          onClick: () => setOpen((value) => !value),
-	          children: jsx('svg', {
-	            className: 'dsh-fairy-metrics-glyph',
-	            viewBox: '0 0 16 16',
-	            width: 16,
-	            height: 16,
-	            'aria-hidden': 'true',
-	            children: [
-	              jsx('rect', { x: 2.8, y: 8.6, width: 2.6, height: 4.6, rx: 1.2 }),
-	              jsx('rect', { x: 6.7, y: 5.4, width: 2.6, height: 7.8, rx: 1.2 }),
-	              jsx('rect', { x: 10.6, y: 2.6, width: 2.6, height: 10.6, rx: 1.2 }),
-	            ],
-	          }),
+	          children: '统计',
 	        }),
 	        open ? jsx('div', { ref: panelRef, id: panelId, className: 'dsh-fairy-session-metrics-panel', role: 'dialog', 'aria-label': '会话统计', children: statItems.length ? statItems.map((item, index) => jsx('div', { className: 'dsh-fairy-session-metrics-item', children: item }, `${index}:${item}`)) : '暂无会话统计' }) : null,
 	      ] });
