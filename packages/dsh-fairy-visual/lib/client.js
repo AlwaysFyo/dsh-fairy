@@ -543,6 +543,11 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // Owner: the hero headline sits below the mascot eye; move it down by the
   // same 60px the eye was lowered so the column keeps its rhythm.
   appendSection('stage-and-mascot', `.dsh-fairy-hero-host{top:clamp(156px,calc(150px + min(36vh,450px)),calc(100dvh - 220px))}`);
+  // 0.2.1 paints the conversation surface (.wSkVaW_root) with the alias base
+  // token, which our ramp keeps as an opaque navy. That hides the fixed grid
+  // host (z 0, body child) behind an in-flow sibling. Make the surface itself
+  // carry the grid so the session history area reads like the hero page.
+  appendSection('stage-and-mascot', `[data-slot="main.conversation"] .wSkVaW_root{background-color:var(--dsh-fairy-void, #07101c)!important;background-image:radial-gradient(120% 80% at 50% -10%, rgba(97,215,255,.10), transparent 60%),repeating-linear-gradient(0deg, rgba(100,210,255,.042) 0 1.5px, transparent 1.5px 48px),repeating-linear-gradient(90deg, rgba(100,210,255,.042) 0 1.5px, transparent 1.5px 48px)!important}`);
   appendSection('hero', `html[data-dsh-fairy-visual] body,html[data-dsh-fairy-visual] body :where(*){font-weight:800!important}html[data-dsh-fairy-visual] body :where(pre,code,kbd,samp),html[data-dsh-fairy-visual] body :where(pre,code,kbd,samp) *{font-weight:400!important}html[data-dsh-fairy-visual] body :where(.dsh-fairy-hero-main,.dsh-fairy-mark-title,.dsh-fairy-toggle){font-weight:750!important}`);
 
   appendSection('sidebar', `html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar{width:12px!important;transition:opacity 180ms cubic-bezier(.22,.61,.36,1)}html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar-thumb{width:6px!important}html[data-dsh-fairy-visual] .dsh-history-overlay-scrollbar[data-idle="true"]{opacity:0;pointer-events:none;transition-timing-function:cubic-bezier(.4,0,.2,1)}`);
