@@ -77,6 +77,13 @@ Modifications made by this project
 12. Mascot preferences (`mascotScale`, `mascotAnimationSpeed`) are part of the
     stored schema; the first port dropped them on write, which silently reset the
     scale slider after every drag.
+13. Header control sizing and glyphs: the three Fairy header controls are rendered
+    as 28x28 ghost icon buttons (8px radius, 16px glyph) to match the stock header
+    buttons, with their labels moved to `aria-label`/`title`; the blank-session
+    fallback borrows the stock corner button's top edge for vertical alignment;
+    and the day/night crescent is drawn as a single even SVG path instead of the
+    reference's 1.7px border with a transparent top edge (Chrome rounds border
+    widths per side, which rendered that arc with an uneven stroke).
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE

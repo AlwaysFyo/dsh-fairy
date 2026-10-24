@@ -59,21 +59,22 @@ function install(_lifecycle = null, { Toggle, useController }) {
           // The reference sized this fallback against a header that had none, so
           // the toggle covered the corner button on a blank conversation. Stop at
           // the corner run, keeping the header's 8px rhythm.
-          const cornerLeft = (() => {
+          const cornerRect = (() => {
             const corner = document.querySelector('[class*="headerCorner"]');
             if (!corner) return null;
-            const cornerRect = corner.getBoundingClientRect();
-            if (cornerRect.width < 1 || cornerRect.height < 1) return null;
-            return cornerRect.left;
+            const box = corner.getBoundingClientRect();
+            if (box.width < 1 || box.height < 1) return null;
+            return box;
           })();
           const hostWidth = host.offsetWidth || 0;
-          const rightEdge = cornerLeft === null
+          const rightEdge = cornerRect === null
             ? rect.right - 28
-            : Math.min(rect.right - 28, cornerLeft - 8);
+            : Math.min(rect.right - 28, cornerRect.left - 8);
           host.style.left = Math.round(rightEdge - hostWidth) + 'px';
-          // Match the active conversation header: 44px header minus the
-          // 28px toggle gives the same 8px top inset used by its flex layout.
-          host.style.top = Math.round(rect.top + 8) + 'px';
+          // Sit on the same baseline as the stock header controls: the corner
+          // button is vertically centred in the 44px header, so borrow its top
+          // instead of hard-coding the 8px inset (which read 2px too high).
+          host.style.top = Math.round(cornerRect === null ? rect.top + 8 : cornerRect.top) + 'px';
           setPositioned(true);
         };
         const schedule = () => {
