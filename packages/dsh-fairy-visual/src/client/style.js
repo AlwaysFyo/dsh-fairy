@@ -349,10 +349,11 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   appendSection('composer', `html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"],html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"][class*="rightbar"],html[data-dsh-fairy-visual] .pI_x6G_rightbarCol [class*="tabHost"]{background:transparent!important;background-color:transparent!important}`);
   // The right sidebar got transparent with the background unification, which
   // erased its seam: in light theme the column melts into the page (#f7fafc on
-  // #f7fafc). Give the open right column the same polymer board + left ridge
-  // the left sidebar layer wears; closed it is 0-width so nothing shows.
-  appendSection('sidebar', `html[data-dsh-fairy-visual] .pI_x6G_rightbarCol{background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.022) 0 .75px,transparent 1px),radial-gradient(circle at 2px 3px,rgba(0,0,0,.028) 0 .8px,transparent 1.1px),radial-gradient(ellipse 115% 48% at 82% 4%,rgba(255,255,255,.022),transparent 64%),linear-gradient(180deg,#3d434b 0%,#3a4047 52%,#373d44 100%)!important;box-shadow:inset 1px 0 0 #4d5660,inset 3px 0 9px -3px rgba(0,0,0,.44),8px 0 24px -12px rgba(0,0,0,.34)!important}`);
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .pI_x6G_rightbarCol{background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.22) 0 .75px,transparent 1px),radial-gradient(circle at 2px 3px,rgba(64,74,84,.055) 0 .8px,transparent 1.1px),radial-gradient(ellipse 115% 48% at 82% 4%,rgba(255,255,255,.18),transparent 64%),linear-gradient(180deg,#dde1e5 0%,#d9dde1 52%,#d4d8dc 100%)!important;box-shadow:inset 1px 0 0 #eef2f5,inset 3px 0 9px -3px rgba(52,63,73,.16),8px 0 24px -12px rgba(52,63,73,.14)!important}`);
+  // #f7fafc). Owner keeps the column transparent (one continuous background)
+  // and asks only for a readable seam: a single 1px rule down its left edge,
+  // no board, no glow. Closed the column is 0-width, so nothing shows.
+  appendSection('sidebar', `html[data-dsh-fairy-visual] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(126,220,255,.30)!important}`);
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(32,91,122,.26)!important}`);
   // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
   // that clashes with the HDD matte. Keep its readability but blend it with
   // the Fairy materials: translucent navy glass + a faint dot texture + the
