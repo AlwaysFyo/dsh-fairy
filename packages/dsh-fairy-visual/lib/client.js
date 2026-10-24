@@ -840,14 +840,11 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   appendSection('header-order', `.dsh-fairy-toggle-group{margin-right:8px!important}`);
   appendSection('composer', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{left:auto!important;top:auto!important;right:calc(var(--dsh-fairy-composer-wing) + 48px)!important;bottom:18px!important;width:auto!important;min-width:0!important;max-width:220px!important;z-index:20!important}@media(max-width:900px){html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{right:180px!important;max-width:176px!important}}`);
 
-  // One continuous background. The reference keeps every column (sidebars,
-  // conversation, composer) transparent over the single body FX host; 0.2.1
-  // adds opaque surfaces that cut the glow into blocks — the conversation
-  // surface, the right empty-tab host, the composer scroll box, and the right
-  // sidebar tab host. Make all of them transparent so the glow reads as one
-  // piece.
+  // One continuous background for the conversation and composer. The 0.2.1
+  // right sidebar is a different surface: its native tab host is the opaque
+  // sheet that covers the conversation in 全屏. Never make it transparent.
   appendSection('composer', `html[data-dsh-fairy-visual] [class*="emptyTabHost"]{background:transparent!important;background-color:transparent!important}`);
-  appendSection('composer', `html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"],html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"][class*="rightbar"],html[data-dsh-fairy-visual] .pI_x6G_rightbarCol [class*="tabHost"]{background:transparent!important;background-color:transparent!important}`);
+  appendSection('composer', `html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"]{background:transparent!important;background-color:transparent!important}`);
   // The right sidebar got transparent with the background unification, which
   // erased its seam: in light theme the column melts into the page (#f7fafc on
   // #f7fafc). Owner keeps the column transparent (one continuous background)
@@ -855,28 +852,12 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   // no board, no glow. Closed the column is 0-width, so nothing shows.
   appendSection('sidebar', `html[data-dsh-fairy-visual] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(126,220,255,.30)!important}`);
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(32,91,122,.26)!important}`);
-  // Owner (m05834/m05943): keep the column transparent, but let it read as its
-  // own sheet — one translucent mask over the right sidebar surface, in both
-  // themes. 0.2.1 renders the whole right panel as `P3OORG_panel`, and its box
-  // does NOT track the column: 918px docked, viewport-wide in 全屏, and it keeps
-  // the stale 918px box after the column collapses to width 0. A stylesheet
-  // cannot tell those states apart, so semantic-markers publishes the measured
-  // state as `data-dsh-fairy-right-sidebar` and the mask is gated on it:
-  // docked → mask, closed → nothing (the stale panel must not paint over the
-  // conversation), fullscreen → nothing (a window-wide mask would hide the HDD
-  // background entirely). No backdrop blur: the grid stays readable.
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(4,12,22,.58)!important}`);
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(255,255,255,.62)!important}`);
-  // Owner (m06013, m06463): in 全屏 the panel covers the whole window and stock
-  // paints that pane as an OPAQUE sheet (measured: 255,255,255 across the whole
-  // window with the HDD theme off). Painting the canvas colour there made the
-  // takeover indistinguishable from the app background — it read as "no
-  // background at all", and the display area looked wrong. So give the
-  // fullscreen pane its own surface: a solid themed sheet one step off the
-  // canvas (`--dsw-alias-bg-layer-1`), a hairline edge, and the 48px grid kept
-  // at a whisper so the sheet still belongs to the HDD language.
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#0a1828!important;background-image:linear-gradient(rgba(100,210,255,.03) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(100,210,255,.03) 1.5px,transparent 1.5px)!important;background-size:48px 48px!important;background-position:0 0!important;box-shadow:inset 0 0 0 1px rgba(126,220,255,.18)!important}`);
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="fullscreen"] [class*="P3OORG_panel"]{background-color:#fff!important;background-image:linear-gradient(rgba(34,126,166,.05) 1.5px,transparent 1.5px),linear-gradient(90deg,rgba(34,126,166,.05) 1.5px,transparent 1.5px)!important;box-shadow:inset 0 0 0 1px rgba(32,111,149,.22)!important}`);
+  // Owner (m06540): restore the stock right-sidebar surface. The reference
+  // project has no 0.2.1 right-sidebar fullscreen layout to copy. Do not paint
+  // P3OORG_panel, add a translucent mask, or draw a grid here: the native tab
+  // host owns the opaque sheet, including the fullscreen takeover. Only the
+  // column's 1px separator above is a Fairy addition.
+
   // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
   // that clashes with the HDD matte. Keep its readability but blend it with
   // the Fairy materials: translucent navy glass + a faint dot texture + the
@@ -5677,18 +5658,6 @@ function requireSemanticMarkersManager () {
 	  let observer = null;
 	  const owned = createSemanticMarkerMap();
 	  let modalOpen = false;
-	  let rightSidebarState = '';
-	  let rightObserver = null;
-	  let rightObserved = [];
-	  const observeRightSidebar = (nodes) => {
-	    if (typeof ResizeObserver !== 'function') return;
-	    const same = rightObserved.length === nodes.length && rightObserved.every((node, index) => node === nodes[index]);
-	    if (same) return;
-	    rightObserver?.disconnect();
-	    rightObserver = new ResizeObserver(() => schedule());
-	    rightObserved = nodes;
-	    nodes.forEach((node) => rightObserver.observe(node));
-	  };
 	  const clear = () => {
 	    owned.forEach((nodes, name) => {
 	      nodes.forEach((node) => {
@@ -5722,24 +5691,6 @@ function requireSemanticMarkersManager () {
 	    if (openSidebarControl) {
 	      mark(sidebarContent, 'data-dsh-fairy-sidebar-collapsed-content');
 	    }
-
-	    // The right sidebar keeps its panel node mounted at full width even while
-	    // the column is collapsed, and the panel grows to the whole viewport in the
-	    // 全屏 layout — a stylesheet cannot tell those three states apart, so
-	    // publish the measured state for the CSS mask. Owner: m05834/m05943.
-	    const rightColumn = document.querySelector('[class*="rightbarCol"]');
-	    const rightPanel = document.querySelector('[class*="P3OORG_panel"]');
-	    const columnWidth = rightColumn ? rightColumn.getBoundingClientRect().width : 0;
-	    const panelWidth = rightPanel ? rightPanel.getBoundingClientRect().width : 0;
-	    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-	    const nextRightSidebarState = columnWidth <= 8
-	      ? 'closed'
-	      : (panelWidth >= viewportWidth * 0.8 ? 'fullscreen' : 'docked');
-	    if (nextRightSidebarState !== rightSidebarState) {
-	      rightSidebarState = nextRightSidebarState;
-	      document.documentElement.setAttribute('data-dsh-fairy-right-sidebar', rightSidebarState);
-	    }
-	    observeRightSidebar([rightColumn, rightPanel].filter(Boolean));
 
 	    const tree = sessionTree(side);
 	    const historySurface = tree?.parentElement?.parentElement;
@@ -5821,12 +5772,8 @@ function requireSemanticMarkersManager () {
 	  }
 	  const cleanup = () => {
 	    domObserverManager.cancelFrame(semanticFrameKey);
-	    rightObserver?.disconnect();
-	    rightObserver = null;
-	    rightObserved = [];
 	    clear();
 	    document.documentElement.removeAttribute('data-dsh-fairy-modal-open');
-	    document.documentElement.removeAttribute('data-dsh-fairy-right-sidebar');
 	  };
 	  lifecycle.add(cleanup, 'semantic-markers:restore-markers');
 	  return () => lifecycle.dispose();
