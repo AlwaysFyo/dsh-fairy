@@ -756,12 +756,13 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       }, readMode, readMode);
     }
 
-    function SessionMetricsControl() {
+    function SessionMetricsControl({ controller }) {
       const [open, setOpen] = React.useState(false);
       const [, setRevision] = React.useState(0);
       const buttonRef = React.useRef(null);
       const panelRef = React.useRef(null);
       const hdd = useHddVisualMode();
+      const sessionState = React.useSyncExternalStore(controller.subscribe, controller.getSnapshot);
       const readStats = () => conversationComposerDock()?.textContent?.trim().replace(/\s+/g, ' ') || '';
       const stats = readStats();
       const statItems = stats.split(/\s*\|\s*/).map((item) => item.trim()).filter(Boolean);
@@ -793,6 +794,13 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
         };
       }, [open]);
       if (!hdd) return null;
+      // A new (blank) session has nothing to report, and its dock carries no stats
+      // text yet: stay out of the header until the session actually holds a turn.
+      // The collapsed placeholder keeps the header run right-aligned (it owns the
+      // auto margin) so the toggle group does not jump when stats appear.
+      if (!sessionState || sessionState.lifecycle === 'idle') {
+        return jsx('span', { className: 'dsh-fairy-session-metrics dsh-fairy-session-metrics-idle', 'data-dsh-fairy-session-metrics': 'idle' });
+      }
       const panelId = 'dsh-fairy-session-metrics-panel';
       return jsxs('span', { className: 'dsh-fairy-session-metrics', children: [
         jsx('button', { ref: buttonRef, type: 'button', className: 'dsh-fairy-session-metrics-button', 'aria-expanded': open, 'aria-controls': panelId, onClick: () => setOpen((value) => !value), children: '统计' }),
@@ -860,7 +868,7 @@ function apply(ctx) {
       }
       ctx.effect(() => () => controller.dispose(), 'dsh-fairy-visual controller');
       ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'dsh-fairy-visual-stage', order: 10 }, () => jsx(StageHost, { controller })));
-      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-session-metrics', order: 80 }, () => jsx(SessionMetricsControl, {})));
+      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-session-metrics', order: 80 }, () => jsx(SessionMetricsControl, { controller })));
       ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-visual-toggle', order: 90 }, () => jsx(Toggle, { controller })));
       ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'dsh-fairy-visual', order: 45, label: () => 'HDD 视觉与 Fairy 身份' }, () => jsx(Settings, { controller, identitySettings })));
       }, { surface: 'client' });

@@ -8,3 +8,9 @@
   name: "@deepseek-ai/dsh-client-locale"
   config:
     preference: zh
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    provider: deepseek-account
+    model: deepseek-flash
+    reasoningEffort: high
