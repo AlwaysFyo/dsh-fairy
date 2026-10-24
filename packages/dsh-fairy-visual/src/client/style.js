@@ -327,7 +327,12 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
 .dsh-fairy-toggle{height:28px!important;padding:0 6px!important;gap:5px!important;font-size:11px!important;line-height:16px!important;border:0!important;border-radius:8px!important}
 .dsh-fairy-theme-toggle{width:28px!important;height:28px!important;border:0!important;border-left:1px solid var(--dsw-alias-border-l2)!important;border-radius:0 8px 8px 0!important}
 .dsh-fairy-session-metrics-button{height:28px!important;padding:0 6px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important}
-.dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover:not(:disabled),.dsh-fairy-session-metrics-button:hover,.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important}`);
+.dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover:not(:disabled),.dsh-fairy-session-metrics-button:hover,.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important}
+/* Open-ring glyph for the day/night toggle: a uniform 1.5px annulus with a 55deg
+   notch and no rotation. Replaces the reference border arc, whose stroke Chrome
+   rounds per side (measured 1px top vs 1.7px elsewhere). */
+.dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important;border:0!important;border-radius:0!important;transform:none!important;background:radial-gradient(circle,transparent 0 4px,currentColor 4px 5.5px,transparent 5.5px)!important;-webkit-mask:conic-gradient(from -118deg,#000 0 305deg,transparent 305deg 360deg)!important;mask:conic-gradient(from -118deg,#000 0 305deg,transparent 305deg 360deg)!important}
+.dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
