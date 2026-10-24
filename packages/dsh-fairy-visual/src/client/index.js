@@ -894,16 +894,25 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       });
     }
 
-    const jsonFetch = async (path, options) => {
-      let response;
-      try {
-        response = await fetch(path, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
-      } catch (error) {
-        // A page loaded from an instance that has since restarted keeps its
-        // sockets and its per-boot cookie, so every write fails at the transport
-        // layer with a bare "Failed to fetch" — say what to do about it.
-        throw new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error?.message ? ` [${error.message}]` : ''}`);
+    const rawFetch = async (path, options) => {
+      const origin = typeof location !== 'undefined' ? location.origin : '';
+      const targets = [path, origin && origin !== 'null' ? `${origin}${path}` : null].filter(Boolean);
+      let lastError = null;
+      for (const target of targets) {
+        try {
+          return await fetch(target, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+        } catch (error) {
+          lastError = error;
+        }
       }
+      // A page served by an instance that has since restarted keeps its sockets
+      // and its per-boot cookie, so every write dies at the transport layer with
+      // a bare "Failed to fetch" — name the origin and say what to do about it.
+      throw new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。origin=${origin} ${lastError?.message ? `[${lastError.message}]` : ''}`);
+    };
+
+    const jsonFetch = async (path, options) => {
+      const response = await rawFetch(path, options);
       const body = await response.json().catch(() => null);
       if (!response.ok) {
         if (response.status === 404) throw new Error('宿主未注册该路由（插件可能没装全，或实例需要重启）');
@@ -975,9 +984,8 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       const preview = async () => {
         setState('previewing');
         try {
-          const response = await fetch('/fairy-voice/tts', {
+          const response = await rawFetch('/fairy-voice/tts', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: '检测完成。主人，Fairy 在线。' }),
           });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);

@@ -58,14 +58,28 @@ function createSettingsHandle(namespace) {
     return snapshot.value
   }
 
-  const transportError = (error) =>
-    new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error && error.message ? ` [${error.message}]` : ''}`)
+  const request = async (path, init) => {
+    const origin = typeof location !== 'undefined' ? location.origin : ''
+    const targets = [path, origin && origin !== 'null' ? `${origin}${path}` : null].filter(Boolean)
+    let lastError = null
+    for (const target of targets) {
+      try {
+        return await fetch(target, { ...init, cache: 'no-store' })
+      } catch (error) {
+        lastError = error
+      }
+    }
+    // Transport-level failure: the page is talking to a host that is gone (or an
+    // origin its own requests cannot reach). Retrying as an absolute URL rules
+    // out a relative-path rewrite; after that, only a reload helps.
+    throw new Error(
+      `无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。origin=${origin}` +
+        (lastError && lastError.message ? ` [${lastError.message}]` : ''),
+    )
+  }
 
   const load = () =>
-    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' }, cache: 'no-store' })
-      .catch((error) => {
-        throw transportError(error)
-      })
+    request(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' } })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
       .then((payload) => (disposed ? snapshot.value : adopt(readValue(payload))))
       .catch((error) => {
@@ -80,15 +94,12 @@ function createSettingsHandle(namespace) {
     const next = { ...(snapshot.value || {}), [field]: value }
     snapshot = { value: next }
     emit()
-    return fetch(scopeUrl(namespace), {
+    return request(scopeUrl(namespace), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ value: next }),
     })
-      .catch((error) => {
-        throw transportError(error)
-      })
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
       .then((payload) => adopt(readValue(payload) ?? next))
       .catch((error) => {

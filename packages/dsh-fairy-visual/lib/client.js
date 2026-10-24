@@ -331,14 +331,28 @@ function requireScopeShim () {
 	    return snapshot.value
 	  };
 
-	  const transportError = (error) =>
-	    new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error && error.message ? ` [${error.message}]` : ''}`);
+	  const request = async (path, init) => {
+	    const origin = typeof location !== 'undefined' ? location.origin : '';
+	    const targets = [path, origin && origin !== 'null' ? `${origin}${path}` : null].filter(Boolean);
+	    let lastError = null;
+	    for (const target of targets) {
+	      try {
+	        return await fetch(target, { ...init, cache: 'no-store' })
+	      } catch (error) {
+	        lastError = error;
+	      }
+	    }
+	    // Transport-level failure: the page is talking to a host that is gone (or an
+	    // origin its own requests cannot reach). Retrying as an absolute URL rules
+	    // out a relative-path rewrite; after that, only a reload helps.
+	    throw new Error(
+	      `无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。origin=${origin}` +
+	        (lastError && lastError.message ? ` [${lastError.message}]` : ''),
+	    )
+	  };
 
 	  const load = () =>
-	    fetch(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' }, cache: 'no-store' })
-	      .catch((error) => {
-	        throw transportError(error)
-	      })
+	    request(scopeUrl(namespace), { credentials: 'same-origin', headers: { accept: 'application/json' } })
 	      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
 	      .then((payload) => (disposed ? snapshot.value : adopt(readValue(payload))))
 	      .catch((error) => {
@@ -353,15 +367,12 @@ function requireScopeShim () {
 	    const next = { ...(snapshot.value || {}), [field]: value };
 	    snapshot = { value: next };
 	    emit();
-	    return fetch(scopeUrl(namespace), {
+	    return request(scopeUrl(namespace), {
 	      method: 'PUT',
 	      credentials: 'same-origin',
 	      headers: { 'content-type': 'application/json', accept: 'application/json' },
 	      body: JSON.stringify({ value: next }),
 	    })
-	      .catch((error) => {
-	        throw transportError(error)
-	      })
 	      .then((response) => (response.ok ? response.json() : Promise.reject(new Error(`settings ${response.status}`))))
 	      .then((payload) => adopt(readValue(payload) ?? next))
 	      .catch((error) => {
@@ -8409,16 +8420,25 @@ function requireClient () {
 	      });
 	    }
 
-	    const jsonFetch = async (path, options) => {
-	      let response;
-	      try {
-	        response = await fetch(path, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
-	      } catch (error) {
-	        // A page loaded from an instance that has since restarted keeps its
-	        // sockets and its per-boot cookie, so every write fails at the transport
-	        // layer with a bare "Failed to fetch" — say what to do about it.
-	        throw new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。${error?.message ? ` [${error.message}]` : ''}`);
+	    const rawFetch = async (path, options) => {
+	      const origin = typeof location !== 'undefined' ? location.origin : '';
+	      const targets = [path, origin && origin !== 'null' ? `${origin}${path}` : null].filter(Boolean);
+	      let lastError = null;
+	      for (const target of targets) {
+	        try {
+	          return await fetch(target, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+	        } catch (error) {
+	          lastError = error;
+	        }
 	      }
+	      // A page served by an instance that has since restarted keeps its sockets
+	      // and its per-boot cookie, so every write dies at the transport layer with
+	      // a bare "Failed to fetch" — name the origin and say what to do about it.
+	      throw new Error(`无法连接插件宿主（页面可能来自重启前的实例）：请刷新页面后重试。origin=${origin} ${lastError?.message ? `[${lastError.message}]` : ''}`);
+	    };
+
+	    const jsonFetch = async (path, options) => {
+	      const response = await rawFetch(path, options);
 	      const body = await response.json().catch(() => null);
 	      if (!response.ok) {
 	        if (response.status === 404) throw new Error('宿主未注册该路由（插件可能没装全，或实例需要重启）');
@@ -8490,9 +8510,8 @@ function requireClient () {
 	      const preview = async () => {
 	        setState('previewing');
 	        try {
-	          const response = await fetch('/fairy-voice/tts', {
+	          const response = await rawFetch('/fairy-voice/tts', {
 	            method: 'POST',
-	            headers: { 'Content-Type': 'application/json' },
 	            body: JSON.stringify({ text: '检测完成。主人，Fairy 在线。' }),
 	          });
 	          if (!response.ok) throw new Error(`HTTP ${response.status}`);
