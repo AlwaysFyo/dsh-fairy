@@ -4,3 +4,4 @@ node_modules/
 *.log
 lib/*.tmp.js
 .dsh-market-home/
+.agents/
