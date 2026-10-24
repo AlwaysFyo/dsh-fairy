@@ -12,6 +12,18 @@ function install(lifecycle = claimSemanticMarkers(document)) {
   let observer = null;
   const owned = createSemanticMarkerMap();
   let modalOpen = false;
+  let rightSidebarState = '';
+  let rightObserver = null;
+  let rightObserved = [];
+  const observeRightSidebar = (nodes) => {
+    if (typeof ResizeObserver !== 'function') return;
+    const same = rightObserved.length === nodes.length && rightObserved.every((node, index) => node === nodes[index]);
+    if (same) return;
+    rightObserver?.disconnect();
+    rightObserver = new ResizeObserver(() => schedule());
+    rightObserved = nodes;
+    nodes.forEach((node) => rightObserver.observe(node));
+  };
   const clear = () => {
     owned.forEach((nodes, name) => {
       nodes.forEach((node) => {
@@ -45,6 +57,24 @@ function install(lifecycle = claimSemanticMarkers(document)) {
     if (openSidebarControl) {
       mark(sidebarContent, 'data-dsh-fairy-sidebar-collapsed-content');
     }
+
+    // The right sidebar keeps its panel node mounted at full width even while
+    // the column is collapsed, and the panel grows to the whole viewport in the
+    // 全屏 layout — a stylesheet cannot tell those three states apart, so
+    // publish the measured state for the CSS mask. Owner: m05834/m05943.
+    const rightColumn = document.querySelector('[class*="rightbarCol"]');
+    const rightPanel = document.querySelector('[class*="P3OORG_panel"]');
+    const columnWidth = rightColumn ? rightColumn.getBoundingClientRect().width : 0;
+    const panelWidth = rightPanel ? rightPanel.getBoundingClientRect().width : 0;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const nextRightSidebarState = columnWidth <= 8
+      ? 'closed'
+      : (panelWidth >= viewportWidth * 0.8 ? 'fullscreen' : 'docked');
+    if (nextRightSidebarState !== rightSidebarState) {
+      rightSidebarState = nextRightSidebarState;
+      document.documentElement.setAttribute('data-dsh-fairy-right-sidebar', rightSidebarState);
+    }
+    observeRightSidebar([rightColumn, rightPanel].filter(Boolean));
 
     const tree = sessionTree(side);
     const historySurface = tree?.parentElement?.parentElement;
@@ -126,8 +156,12 @@ function install(lifecycle = claimSemanticMarkers(document)) {
   }
   const cleanup = () => {
     domObserverManager.cancelFrame(semanticFrameKey);
+    rightObserver?.disconnect();
+    rightObserver = null;
+    rightObserved = [];
     clear();
     document.documentElement.removeAttribute('data-dsh-fairy-modal-open');
+    document.documentElement.removeAttribute('data-dsh-fairy-right-sidebar');
   };
   lifecycle.add(cleanup, 'semantic-markers:restore-markers');
   return () => lifecycle.dispose();

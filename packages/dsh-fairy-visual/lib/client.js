@@ -855,15 +855,18 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   // no board, no glow. Closed the column is 0-width, so nothing shows.
   appendSection('sidebar', `html[data-dsh-fairy-visual] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(126,220,255,.30)!important}`);
   appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .pI_x6G_rightbarCol{box-shadow:inset 1px 0 0 rgba(32,91,122,.26)!important}`);
-  // Owner (m05834): keep the column transparent, but let it read as its own
-  // sheet — one translucent mask over the right sidebar surface, in both
-  // themes. 0.2.1 renders the whole right panel as `P3OORG_panel`; it is 918px
-  // wide docked and grows to the full window when the 全屏 layout is on, so
-  // masking the panel covers the docked column and the fullscreen takeover
-  // with a single rule (measured: panel box == column box docked, == viewport
-  // fullscreen). No backdrop blur: the grid should stay faintly readable.
-  appendSection('sidebar', `html[data-dsh-fairy-visual] [class*="P3OORG_panel"]{background-color:rgba(4,12,22,.58)!important}`);
-  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [class*="P3OORG_panel"]{background-color:rgba(255,255,255,.62)!important}`);
+  // Owner (m05834/m05943): keep the column transparent, but let it read as its
+  // own sheet — one translucent mask over the right sidebar surface, in both
+  // themes. 0.2.1 renders the whole right panel as `P3OORG_panel`, and its box
+  // does NOT track the column: 918px docked, viewport-wide in 全屏, and it keeps
+  // the stale 918px box after the column collapses to width 0. A stylesheet
+  // cannot tell those states apart, so semantic-markers publishes the measured
+  // state as `data-dsh-fairy-right-sidebar` and the mask is gated on it:
+  // docked → mask, closed → nothing (the stale panel must not paint over the
+  // conversation), fullscreen → nothing (a window-wide mask would hide the HDD
+  // background entirely). No backdrop blur: the grid stays readable.
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(4,12,22,.58)!important}`);
+  appendSection('sidebar', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"][data-dsh-fairy-right-sidebar="docked"] [class*="P3OORG_panel"]{background-color:rgba(255,255,255,.62)!important}`);
   // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
   // that clashes with the HDD matte. Keep its readability but blend it with
   // the Fairy materials: translucent navy glass + a faint dot texture + the
@@ -5664,6 +5667,18 @@ function requireSemanticMarkersManager () {
 	  let observer = null;
 	  const owned = createSemanticMarkerMap();
 	  let modalOpen = false;
+	  let rightSidebarState = '';
+	  let rightObserver = null;
+	  let rightObserved = [];
+	  const observeRightSidebar = (nodes) => {
+	    if (typeof ResizeObserver !== 'function') return;
+	    const same = rightObserved.length === nodes.length && rightObserved.every((node, index) => node === nodes[index]);
+	    if (same) return;
+	    rightObserver?.disconnect();
+	    rightObserver = new ResizeObserver(() => schedule());
+	    rightObserved = nodes;
+	    nodes.forEach((node) => rightObserver.observe(node));
+	  };
 	  const clear = () => {
 	    owned.forEach((nodes, name) => {
 	      nodes.forEach((node) => {
@@ -5697,6 +5712,24 @@ function requireSemanticMarkersManager () {
 	    if (openSidebarControl) {
 	      mark(sidebarContent, 'data-dsh-fairy-sidebar-collapsed-content');
 	    }
+
+	    // The right sidebar keeps its panel node mounted at full width even while
+	    // the column is collapsed, and the panel grows to the whole viewport in the
+	    // 全屏 layout — a stylesheet cannot tell those three states apart, so
+	    // publish the measured state for the CSS mask. Owner: m05834/m05943.
+	    const rightColumn = document.querySelector('[class*="rightbarCol"]');
+	    const rightPanel = document.querySelector('[class*="P3OORG_panel"]');
+	    const columnWidth = rightColumn ? rightColumn.getBoundingClientRect().width : 0;
+	    const panelWidth = rightPanel ? rightPanel.getBoundingClientRect().width : 0;
+	    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+	    const nextRightSidebarState = columnWidth <= 8
+	      ? 'closed'
+	      : (panelWidth >= viewportWidth * 0.8 ? 'fullscreen' : 'docked');
+	    if (nextRightSidebarState !== rightSidebarState) {
+	      rightSidebarState = nextRightSidebarState;
+	      document.documentElement.setAttribute('data-dsh-fairy-right-sidebar', rightSidebarState);
+	    }
+	    observeRightSidebar([rightColumn, rightPanel].filter(Boolean));
 
 	    const tree = sessionTree(side);
 	    const historySurface = tree?.parentElement?.parentElement;
@@ -5778,8 +5811,12 @@ function requireSemanticMarkersManager () {
 	  }
 	  const cleanup = () => {
 	    domObserverManager.cancelFrame(semanticFrameKey);
+	    rightObserver?.disconnect();
+	    rightObserver = null;
+	    rightObserved = [];
 	    clear();
 	    document.documentElement.removeAttribute('data-dsh-fairy-modal-open');
+	    document.documentElement.removeAttribute('data-dsh-fairy-right-sidebar');
 	  };
 	  lifecycle.add(cleanup, 'semantic-markers:restore-markers');
 	  return () => lifecycle.dispose();
