@@ -167,6 +167,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | TTS API Key | 真实 UI 输入并保存 → 宿主 `apiKeySet:true`、`apiKeyMask:••••••••7788`、响应正文无明文；mock 侧 `/__auth` 收到 `Bearer sk-…`（探活与合成两条都带）；点「清除 API Key」→ `apiKeySet:false`、请求不再带该头；15 项不变量由 `tools/cdp/tts-auth-check.mjs` 全绿 |
 | TTS 双协议 | 协议下拉切 `yovoice` 后出现模型/音色字段、「读取引擎模型/音色」从 mock 拉到 `mock-index-tts2` + `mock-voice-001`；「试听」返回 `audio/wav`（38444 B），浏览器 `decodeAudioData` 解码 43 564 B 后 `createBufferSource` 播放并提示「已播放试听」；切回 `gpt-sovits` 后上传控件恢复、模型字段消失；13 项不变量由 `tools/cdp/yovoice-check.mjs` 全绿 |
 | 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
+| 右侧边栏蒙板 | 四态实测（dark/light × 停靠/全屏）：面板底色恒为 `rgba(4,12,22,.58)` / 浅色 `rgba(255,255,255,.62)`；停靠态面板盒 = 列盒 `[1122,0,918,1200]`、全屏态 `[0,0,2040,1200]`，单条规则覆盖两种布局；两种主题 `lowContrast: []`、`layout-audit` ok |
 
 ### 设置面板的打开前提
 
