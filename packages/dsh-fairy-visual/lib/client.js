@@ -778,7 +778,7 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // foreign child of the utilities outlet is pushed one order step further, so the
   // run reads 统计 -> H.D.D -> 日间模式 -> 文件资源管理器 -> 更多操作 -> 打开右侧边栏
   // while the title cluster still absorbs the free space.
-  appendSection('header-order', `html[data-dsh-fairy-visual] [data-slot="conversation.session.header.utilities"] > :not(.dsh-fairy-session-metrics):not(.dsh-fairy-session-metrics-idle):not(.dsh-fairy-toggle-group){order:1!important}html[data-dsh-fairy-visual] [data-slot="conversation.session.header.corner"] > *{order:2!important}html[data-dsh-fairy-visual] [class*="headerCorner"]{order:2!important}html[data-dsh-fairy-visual] [data-slot="conversation.session.header.utilities"] > .dsh-fairy-session-metrics{order:0!important;margin-left:8px!important}html[data-dsh-fairy-visual] .dsh-fairy-toggle-group{order:0!important;margin-left:8px!important}html[data-dsh-fairy-visual] .dsh-fairy-session-metrics-idle{display:block;width:0;height:0;padding:0;margin:0;border:0;overflow:hidden;flex:0 0 auto}`);
+  appendSection('header-order', `[data-slot="conversation.session.header.utilities"] > :not(.dsh-fairy-session-metrics):not(.dsh-fairy-session-metrics-idle):not(.dsh-fairy-toggle-group){order:1!important}[data-slot="conversation.session.header.corner"] > *{order:2!important}[class*="headerCorner"]{order:2!important}[data-slot="conversation.session.header.utilities"] > .dsh-fairy-session-metrics{order:0!important;margin-left:8px!important}.dsh-fairy-toggle-group{order:0!important;margin-left:8px!important}.dsh-fairy-session-metrics-idle{display:block;width:0;height:0;padding:0;margin:0;border:0;overflow:hidden;flex:0 0 auto}`);
   // Owner feedback round 3.
   // (1) Spacing: the Stock header buttons sit flush against our toggle group (the
   //     measured gap was 0px while every other pair read 8px). A margin on our
@@ -789,7 +789,7 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   //     clone in the left wing, but on 0.2.1 the single node is the live picker, so
   //     the clone geometry stranded it in the left wing. Anchor it to the send
   //     button instead, using the same wing width the send control uses.
-  appendSection('header-order', `html[data-dsh-fairy-visual] .dsh-fairy-toggle-group{margin-right:8px!important}`);
+  appendSection('header-order', `.dsh-fairy-toggle-group{margin-right:8px!important}`);
   appendSection('composer', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{left:auto!important;top:auto!important;right:calc(var(--dsh-fairy-composer-wing) + 48px)!important;bottom:18px!important;width:auto!important;min-width:0!important;max-width:220px!important;z-index:20!important}@media(max-width:900px){html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-composer-model-control="true"]{right:180px!important;max-width:176px!important}}`);
 
   // Owner feedback round 4 — match the stock header buttons, content untouched.
