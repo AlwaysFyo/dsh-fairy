@@ -540,6 +540,10 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // #dsh-fairy-root child. Move that rendered projection, not the outer stage
   // geometry box used for sidebar alignment and lifecycle ownership.
   appendSection('stage-and-mascot', `.dsh-fairy-stage>[data-dsh-fairy-mascot-root="true"]{top:40px}`);
+  // Plugin and automation pages: the route gate sets this flag and pauses the
+  // runtime; fade the whole stage so the eye does not hover over non-session
+  // panels (the reference only keeps it on session/hero pages).
+  appendSection('stage-and-mascot', `.dsh-fairy-stage[data-fairy-route-hidden="true"]{opacity:0!important;pointer-events:none!important;transition:opacity 200ms ease}`);
   // Owner: the hero headline sits below the mascot eye; move it down by the
   // same 60px the eye was lowered so the column keeps its rhythm.
   appendSection('stage-and-mascot', `.dsh-fairy-hero-host{top:clamp(156px,calc(150px + min(36vh,450px)),calc(100dvh - 220px))}`);
@@ -7828,6 +7832,44 @@ function requireClient () {
 	        mascot?.setVisualActive?.(visible, owner);
 	      }, [visible, state.activity, state.settings.powerMode, state.settings.mascotAnimationSpeed]);
 
+	      // Route gate: the plugin and automation pages are not conversation
+	      // surfaces — the reference keeps the mascot eye on session and hero pages
+	      // only. The sidebar marks those pages with aria-current="page"; when the
+	      // marker appears, pause the mascot runtime and fade the stage out, and
+	      // restore both when the marker leaves.
+	      React.useEffect(() => {
+	        if (!enabled) return undefined;
+	        const stageNode = stageRef.current;
+	        if (!stageNode || typeof MutationObserver !== 'function') return undefined;
+	        let routeHidden = false;
+	        let visibleOwner = null;
+	        const takeOwner = () => {
+	          if (visibleOwner && visibleOwner.active) return visibleOwner;
+	          visibleOwner = { stage: stageNode, active: true };
+	          return visibleOwner;
+	        };
+	        const apply = () => {
+	          const offRoute = Boolean(document.querySelector('[aria-current="page"]'));
+	          if (offRoute === routeHidden) return;
+	          routeHidden = offRoute;
+	          if (offRoute) {
+	            stageNode.setAttribute('data-fairy-route-hidden', 'true');
+	            mascotRuntime?.setVisualActive?.(false, takeOwner());
+	          } else {
+	            stageNode.removeAttribute('data-fairy-route-hidden');
+	            if (visibleRef.current) mascotRuntime?.setVisualActive?.(true, takeOwner());
+	          }
+	        };
+	        apply();
+	        const observer = new MutationObserver(apply);
+	        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-current', 'class'] });
+	        return () => {
+	          observer.disconnect();
+	          if (visibleOwner) visibleOwner.active = false;
+	          stageNode.removeAttribute('data-fairy-route-hidden');
+	        };
+	      }, [enabled]);
+
 	      React.useLayoutEffect(() => {
 	        if (!enabled) return undefined;
 	        return scheduleMascotScale(state.settings.mascotScale);
@@ -8316,6 +8358,10 @@ function requireClient () {
 	          mode === 'custom' ? jsx('label', { children: ['自定义称呼：', jsx('input', { value: identityValue.customName || '', maxLength: 40, onChange: (event) => save(identitySettings, 'customName', event.target.value) })] }) : null,
 	          mode === 'custom' ? jsx('label', { children: ['第二助手（可选）：', jsx('input', { value: identityValue.secondAssistant || '', maxLength: 40, onChange: (event) => save(identitySettings, 'secondAssistant', event.target.value) })] }) : null,
 	          mode === 'custom' ? jsx('label', { children: ['家庭成员（可选，逗号分隔）：', jsx('input', { value: Array.isArray(identityValue.household) ? identityValue.household.join('、') : '', maxLength: 240, onChange: (event) => save(identitySettings, 'household', event.target.value.split(/[、,，]/).map((value) => value.trim()).filter(Boolean).slice(0, 12)) })] }) : null,
+	          jsx('hr', {}),
+	          // The voice package mounts its briefing panel here (shared "Fairy
+	          // 控制台" section instead of a nav cell of its own).
+	          jsx('div', { 'data-dsh-fairy-hub-voice': 'true' }),
 	        ],
 	      });
 	    }
@@ -8351,7 +8397,7 @@ function requireClient () {
 	      ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'dsh-fairy-visual-stage', order: 10 }, () => jsx(StageHost, { controller })));
 	      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-session-metrics', order: 80 }, () => jsx(SessionMetricsControl, { controller })));
 	      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-visual-toggle', order: 90 }, () => jsx(Toggle, { controller })));
-	      ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'dsh-fairy-visual', order: 45, label: () => 'HDD 视觉与 Fairy 身份' }, () => jsx(Settings, { controller, identitySettings })));
+	      ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'dsh-fairy-visual', order: 45, label: () => 'Fairy 控制台' }, () => jsx(Settings, { controller, identitySettings })));
 	      }, { surface: 'client' });
 	    }
 

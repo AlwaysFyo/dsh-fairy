@@ -59,6 +59,10 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // #dsh-fairy-root child. Move that rendered projection, not the outer stage
   // geometry box used for sidebar alignment and lifecycle ownership.
   appendSection('stage-and-mascot', `.dsh-fairy-stage>[data-dsh-fairy-mascot-root="true"]{top:40px}`);
+  // Plugin and automation pages: the route gate sets this flag and pauses the
+  // runtime; fade the whole stage so the eye does not hover over non-session
+  // panels (the reference only keeps it on session/hero pages).
+  appendSection('stage-and-mascot', `.dsh-fairy-stage[data-fairy-route-hidden="true"]{opacity:0!important;pointer-events:none!important;transition:opacity 200ms ease}`);
   // Owner: the hero headline sits below the mascot eye; move it down by the
   // same 60px the eye was lowered so the column keeps its rhythm.
   appendSection('stage-and-mascot', `.dsh-fairy-hero-host{top:clamp(156px,calc(150px + min(36vh,450px)),calc(100dvh - 220px))}`);

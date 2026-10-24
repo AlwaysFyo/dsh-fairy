@@ -1522,9 +1522,40 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
       const slotDisposers = [
         injectVoiceSlot(ctx, 'conversation.input.left', { name: 'conversation.input.left', id: 'fairy-voice-controller', order: 40 }, SessionScopedVoiceController),
         injectVoiceSlot(ctx, 'conversation.chat.assistant-actions', { id: 'fairy-voice-message-action', order: 20 }, MessageAction),
-        injectVoiceSlot(ctx, 'settings.section', { id: 'fairy-voice-brain', order: 30, label: () => '语音简报' }, VoiceBrainSection),
       ].filter((dispose) => typeof dispose === 'function');
       ctx.effect(() => () => slotDisposers.forEach((dispose) => dispose()), 'dsh-fairy-voice slot registrations');
+      // The voice briefing panel lives inside the Fairy hub section (the visual
+      // package owns the settings.page now); mount it into that section's
+      // mount point instead of claiming a nav cell of its own.
+      ctx.effect(() => {
+        let disposed = false;
+        let observer = null;
+        let root = null;
+        const mount = () => {
+          if (disposed) return;
+          const container = document.querySelector('[data-dsh-fairy-hub-voice="true"]');
+          if (!container) return;
+          try {
+            const client = require('react-dom/client');
+            root = client.createRoot(container);
+            root.render(jsx.jsx(VoiceBrainSection, {}));
+          } catch (mountError) {
+            console.warn('[dsh-fairy-voice] hub mount failed', mountError);
+          }
+        };
+        const scheduleMount = () => { if (!disposed) setTimeout(mount, 0); };
+        if (typeof MutationObserver === 'function') {
+          observer = new MutationObserver(scheduleMount);
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+        }
+        scheduleMount();
+        return () => {
+          disposed = true;
+          observer?.disconnect();
+          root?.unmount?.();
+          root = null;
+        };
+      }, 'dsh-fairy-voice hub mount');
       }, { surface: 'client' });
     }
 
