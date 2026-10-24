@@ -898,7 +898,7 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   appendSection('settings-blocks', `.dsh-fairy-settings-block{display:grid;gap:8px;border:1px solid rgba(100,210,255,.18);border-radius:10px;padding:12px 14px;background:rgba(8,20,32,.38)}
 .dsh-fairy-settings-block h4{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
 .dsh-fairy-settings-block label{display:grid;gap:4px;font-size:12px}
-.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
+.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block input[type="password"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
 .dsh-fairy-settings-block textarea{resize:vertical;min-height:96px}
 .dsh-fairy-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .dsh-fairy-actions button{border:1px solid rgba(100,210,255,.28);background:rgba(100,210,255,.10);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:inherit;font:inherit;font-size:12px}
@@ -906,8 +906,11 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 .dsh-fairy-actions button:disabled{opacity:.6;cursor:default}
 .dsh-fairy-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center;border:1px dashed rgba(100,210,255,.32);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
 .dsh-fairy-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.dsh-fairy-hint{font-size:11px;line-height:1.5;opacity:.72;margin:0}`);
-  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}`);
+.dsh-fairy-hint{font-size:11px;line-height:1.5;opacity:.72;margin:0}
+.dsh-fairy-hint button{margin-left:8px;border:1px solid rgba(100,210,255,.24);background:transparent;border-radius:6px;padding:1px 8px;font:inherit;font-size:11px;color:inherit;cursor:pointer}
+.dsh-fairy-hint button:hover:not(:disabled){background:rgba(100,210,255,.14)}
+.dsh-fairy-hint button:disabled{opacity:.6;cursor:default}`);
+  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="password"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hint button{border-color:rgba(34,126,166,.3)}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
@@ -8465,11 +8468,11 @@ function requireClient () {
 	      const [config, setConfig] = React.useState(null);
 	      const [state, setState] = React.useState('loading');
 	      const [note, setNote] = React.useState('');
-	      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '' });
+	      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '', apiKey: '' });
 	      const applyConfig = (value) => {
 	        if (!value) return;
 	        setConfig(value);
-	        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '' });
+	        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '', apiKey: '' });
 	      };
 	      React.useEffect(() => {
 	        let cancelled = false;
@@ -8486,13 +8489,29 @@ function requireClient () {
 	      const save = async () => {
 	        setState('saving');
 	        try {
-	          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(draft) });
+	          /* An empty key field means "leave the stored key alone"; the host
+	           * treats a missing apiKey the same way, so only send a real value. */
+	          const payload = { ttsUrl: draft.ttsUrl, docsUrl: draft.docsUrl, promptText: draft.promptText };
+	          if (draft.apiKey.trim()) payload.apiKey = draft.apiKey.trim();
+	          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(payload) });
 	          applyConfig(body?.value);
 	          setState('ready');
 	          setNote('已保存');
 	        } catch (error) {
 	          setState('error');
 	          setNote(`保存失败：${error.message || error}`);
+	        }
+	      };
+	      const clearKey = async () => {
+	        setState('saving');
+	        try {
+	          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify({ clearApiKey: true }) });
+	          applyConfig(body?.value);
+	          setState('ready');
+	          setNote('已清除 API Key');
+	        } catch (error) {
+	          setState('error');
+	          setNote(`清除失败：${error.message || error}`);
 	        }
 	      };
 	      const probe = async () => {
@@ -8548,9 +8567,16 @@ function requireClient () {
 	      }
 	      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
 	        jsx('h4', { children: '语音服务（TTS）' }),
-	        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL，这里保存的值优先。' }),
+	        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL / DSH_FAIRY_TTS_APIKEY，这里保存的值优先。' }),
 	        jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
 	        jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('label', { children: ['API Key（可选）：', jsx('input', { type: 'password', value: draft.apiKey, autoComplete: 'off', placeholder: config?.apiKeySet ? `已设置 ${config.apiKeyMask || ''}（留空保持不变）` : '云端语音服务需要时填写，本地 GPT-SoVITS 留空', onChange: (event) => setDraft({ ...draft, apiKey: event.target.value }), style: { width: '100%' } })] }),
+	        config?.apiKeySet
+	          ? jsxs('div', { className: 'dsh-fairy-hint', children: [
+	              `API Key 已设置${config.apiKeySource === 'env' ? '（来自 DSH_FAIRY_TTS_APIKEY）' : ''}，请求会带 Authorization: Bearer …；`,
+	              jsx('button', { type: 'button', onClick: clearKey, disabled: state === 'saving', children: '清除 API Key' }),
+	            ] })
+	          : jsx('div', { className: 'dsh-fairy-hint', children: '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
 	        jsx('label', { children: ['参考音频提示文本：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
 	        jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
 	        jsxs('div', { className: 'dsh-fairy-actions', children: [

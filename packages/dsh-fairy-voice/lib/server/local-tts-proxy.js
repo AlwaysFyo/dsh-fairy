@@ -94,14 +94,21 @@ export function createLocalTtsTransport({
   const stream = (url, options, timeoutMs, signal) => fetchImpl === fetch
     ? openLocalStream(url, options, timeoutMs, signal)
     : fetchImpl(url, { ...options, signal }).then((response) => ({ response, release: null }));
+  /* Engines that need a token get it as a Bearer header; unset means no header,
+   * so a plain local GPT-SoVITS install keeps working unchanged. */
+  const authHeaders = (config) => {
+    const key = typeof config?.apiKey === 'string' ? config.apiKey.trim() : '';
+    return key ? { authorization: `Bearer ${key}` } : {};
+  };
   const localTtsRequest = (text, config) => ({
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(config) },
     body: JSON.stringify({ text, text_lang: 'zh', ref_audio_path: config.referenceAudioPath, prompt_text: config.referencePrompt, prompt_lang: 'zh', text_split_method: 'cut5', batch_size: 1, media_type: 'raw', streaming_mode: 1, fragment_interval: 0.14, parallel_infer: false }),
   });
   return {
     status(signal) {
-      return fetchStatus(current().docsUrl, { method: 'GET' }, statusTimeoutMs, signal).then((response) => {
+      const config = current();
+      return fetchStatus(config.docsUrl, { method: 'GET', headers: authHeaders(config) }, statusTimeoutMs, signal).then((response) => {
         if (!response.ok) throw new Error(`Fairy status returned ${response.status}`);
         return { available: true, reason: null };
       });

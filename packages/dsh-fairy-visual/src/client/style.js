@@ -397,7 +397,7 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   appendSection('settings-blocks', `.dsh-fairy-settings-block{display:grid;gap:8px;border:1px solid rgba(100,210,255,.18);border-radius:10px;padding:12px 14px;background:rgba(8,20,32,.38)}
 .dsh-fairy-settings-block h4{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
 .dsh-fairy-settings-block label{display:grid;gap:4px;font-size:12px}
-.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
+.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block input[type="password"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
 .dsh-fairy-settings-block textarea{resize:vertical;min-height:96px}
 .dsh-fairy-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .dsh-fairy-actions button{border:1px solid rgba(100,210,255,.28);background:rgba(100,210,255,.10);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:inherit;font:inherit;font-size:12px}
@@ -405,8 +405,11 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 .dsh-fairy-actions button:disabled{opacity:.6;cursor:default}
 .dsh-fairy-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center;border:1px dashed rgba(100,210,255,.32);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
 .dsh-fairy-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.dsh-fairy-hint{font-size:11px;line-height:1.5;opacity:.72;margin:0}`);
-  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}`);
+.dsh-fairy-hint{font-size:11px;line-height:1.5;opacity:.72;margin:0}
+.dsh-fairy-hint button{margin-left:8px;border:1px solid rgba(100,210,255,.24);background:transparent;border-radius:6px;padding:1px 8px;font:inherit;font-size:11px;color:inherit;cursor:pointer}
+.dsh-fairy-hint button:hover:not(:disabled){background:rgba(100,210,255,.14)}
+.dsh-fairy-hint button:disabled{opacity:.6;cursor:default}`);
+  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="password"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hint button{border-color:rgba(34,126,166,.3)}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 

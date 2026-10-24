@@ -478,6 +478,7 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
         docsUrl: config.docsUrl,
         referenceAudioPath: referenceAudioPath(config),
         referencePrompt: referencePromptText(config),
+        apiKey: config.apiKey,
       };
     },
     ttsTimeoutMs: TTS_TIMEOUT_MS,

@@ -939,11 +939,11 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       const [config, setConfig] = React.useState(null);
       const [state, setState] = React.useState('loading');
       const [note, setNote] = React.useState('');
-      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '' });
+      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '', apiKey: '' });
       const applyConfig = (value) => {
         if (!value) return;
         setConfig(value);
-        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '' });
+        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '', apiKey: '' });
       };
       React.useEffect(() => {
         let cancelled = false;
@@ -960,13 +960,29 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       const save = async () => {
         setState('saving');
         try {
-          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(draft) });
+          /* An empty key field means "leave the stored key alone"; the host
+           * treats a missing apiKey the same way, so only send a real value. */
+          const payload = { ttsUrl: draft.ttsUrl, docsUrl: draft.docsUrl, promptText: draft.promptText };
+          if (draft.apiKey.trim()) payload.apiKey = draft.apiKey.trim();
+          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(payload) });
           applyConfig(body?.value);
           setState('ready');
           setNote('已保存');
         } catch (error) {
           setState('error');
           setNote(`保存失败：${error.message || error}`);
+        }
+      };
+      const clearKey = async () => {
+        setState('saving');
+        try {
+          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify({ clearApiKey: true }) });
+          applyConfig(body?.value);
+          setState('ready');
+          setNote('已清除 API Key');
+        } catch (error) {
+          setState('error');
+          setNote(`清除失败：${error.message || error}`);
         }
       };
       const probe = async () => {
@@ -1022,9 +1038,16 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       }
       return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
         jsx('h4', { children: '语音服务（TTS）' }),
-        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL，这里保存的值优先。' }),
+        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL / DSH_FAIRY_TTS_APIKEY，这里保存的值优先。' }),
         jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
         jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
+        jsx('label', { children: ['API Key（可选）：', jsx('input', { type: 'password', value: draft.apiKey, autoComplete: 'off', placeholder: config?.apiKeySet ? `已设置 ${config.apiKeyMask || ''}（留空保持不变）` : '云端语音服务需要时填写，本地 GPT-SoVITS 留空', onChange: (event) => setDraft({ ...draft, apiKey: event.target.value }), style: { width: '100%' } })] }),
+        config?.apiKeySet
+          ? jsxs('div', { className: 'dsh-fairy-hint', children: [
+              `API Key 已设置${config.apiKeySource === 'env' ? '（来自 DSH_FAIRY_TTS_APIKEY）' : ''}，请求会带 Authorization: Bearer …；`,
+              jsx('button', { type: 'button', onClick: clearKey, disabled: state === 'saving', children: '清除 API Key' }),
+            ] })
+          : jsx('div', { className: 'dsh-fairy-hint', children: '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
         jsx('label', { children: ['参考音频提示文本：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
         jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
         jsxs('div', { className: 'dsh-fairy-actions', children: [

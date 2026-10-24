@@ -20,6 +20,20 @@ Fairy 的语音走的是**参考项目原有的协议**：宿主把文本 POST �
 （`GET {DSH_FAIRY_DOCS_URL}`——默认 `http://127.0.0.1:9880/docs`——返回 2xx
 即视为可用；否则语音控件静默降级，不影响其它功能。）
 
+## 需要鉴权的端点
+
+设置 →「Fairy 控制台」→「语音服务（TTS）」里的 **API Key** 字段（也可用
+`DSH_FAIRY_TTS_APIKEY` 给默认值）用于托管式或加锁的引擎：
+
+- 设置后**探活与合成的请求都带** `Authorization: Bearer <key>`；未设置则不带任何认证头，
+  所以本地不加鉴权的 GPT-SoVITS 完全不受影响。
+- Key 只写不读：`GET /fairy-voice/config` 只回 `apiKeySet` 与末四位掩码，正文永远不含明文；
+  留空提交表示「保持不变」，要清掉必须点「清除 API Key」（`POST /fairy-voice/config/update`
+  带 `{"clearApiKey":true}`）。
+- 明文存在 `$DSH_HOME/fairy-voice/tts-config.json`（和 `voice-brain.json` 同一类本机凭据文件）。
+- 自检：`node tools/cdp/tts-auth-check.mjs http://127.0.0.1:3400 http://127.0.0.1:9881/__auth`
+  —— 15 项不变量，含「探活/合成是否真的带上了 Bearer」「清除后是否不再发头」。
+
 ## 结论先说
 
 | 选择 | 改动量 | 中文表现 | 克隆 | 备注 |

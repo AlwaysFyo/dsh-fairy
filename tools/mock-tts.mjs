@@ -39,9 +39,17 @@ function synthPcm(text) {
 	return out;
 }
 
+const seen = { tts: null, docs: null, ttsCount: 0 };
+
 const server = http.createServer(async (req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${port}`);
+	if (req.method === 'GET' && url.pathname === '/__auth') {
+		res.writeHead(200, { 'content-type': 'application/json' });
+		res.end(JSON.stringify(seen));
+		return;
+	}
 	if (req.method === 'GET' && (url.pathname === '/docs' || url.pathname === '/')) {
+		seen.docs = req.headers.authorization ?? null;
 		res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
 		res.end('<html><body>mock GPT-SoVITS API</body></html>');
 		return;
@@ -51,6 +59,8 @@ const server = http.createServer(async (req, res) => {
 		res.end(JSON.stringify({ error: 'not found' }));
 		return;
 	}
+	seen.tts = req.headers.authorization ?? null;
+	seen.ttsCount += 1;
 
 	const chunks = [];
 	for await (const chunk of req) chunks.push(chunk);

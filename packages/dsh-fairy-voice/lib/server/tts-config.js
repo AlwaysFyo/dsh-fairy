@@ -14,6 +14,7 @@ export const ttsConfigPath = () => join(dshHome(), 'fairy-voice', 'tts-config.js
 export const referenceDir = () => join(dshHome(), 'fairy-voice', 'runtime', 'reference')
 
 const MAX_PROMPT_LENGTH = 4_000
+const MAX_API_KEY_LENGTH = 512
 const MAX_AUDIO_BYTES = 24 * 1024 * 1024
 
 export const envDefaults = () => ({
@@ -21,6 +22,7 @@ export const envDefaults = () => ({
   docsUrl: process.env.DSH_FAIRY_DOCS_URL || 'http://127.0.0.1:9880/docs',
   referenceAudio: 'fairy_ref.wav',
   promptText: '',
+  apiKey: process.env.DSH_FAIRY_TTS_APIKEY || '',
 })
 
 const sanitizeUrl = (value, fallback) => {
@@ -45,11 +47,13 @@ export const normalizeTtsConfig = (raw) => {
   const defaults = envDefaults()
   const source = raw && typeof raw === 'object' ? raw : {}
   const promptText = typeof source.promptText === 'string' ? source.promptText.slice(0, MAX_PROMPT_LENGTH) : defaults.promptText
+  const apiKey = typeof source.apiKey === 'string' ? source.apiKey.trim().slice(0, MAX_API_KEY_LENGTH) : defaults.apiKey
   return {
     ttsUrl: sanitizeUrl(source.ttsUrl, defaults.ttsUrl),
     docsUrl: sanitizeUrl(source.docsUrl, defaults.docsUrl),
     referenceAudio: sanitizeAudioName(source.referenceAudio, defaults.referenceAudio),
     promptText,
+    apiKey,
   }
 }
 
@@ -71,7 +75,13 @@ export const readTtsConfig = async () => {
 
 export const writeTtsConfig = async (patch) => {
   const current = await readTtsConfig()
-  const next = normalizeTtsConfig({ ...current, ...(patch && typeof patch === 'object' ? patch : {}) })
+  const source = patch && typeof patch === 'object' ? { ...patch } : {}
+  /* The UI never receives the stored key back, so an empty field means "keep
+   * what is saved" rather than "erase it"; clearing needs an explicit flag. */
+  if (source.clearApiKey === true) source.apiKey = ''
+  else if (typeof source.apiKey !== 'string' || !source.apiKey.trim()) delete source.apiKey
+  delete source.clearApiKey
+  const next = normalizeTtsConfig({ ...current, ...source })
   const path = ttsConfigPath()
   await mkdir(join(path, '..'), { recursive: true })
   await mkdir(referenceDir(), { recursive: true })
@@ -79,6 +89,12 @@ export const writeTtsConfig = async (patch) => {
   await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
   await rename(tmp, path)
   return next
+}
+
+/** Bearer header for an engine that wants a token; empty object when unset. */
+export const authorizationHeader = (config) => {
+  const key = typeof config?.apiKey === 'string' ? config.apiKey.trim() : ''
+  return key ? { authorization: `Bearer ${key}` } : {}
 }
 
 const decodeAudio = (value) => {
@@ -134,8 +150,13 @@ export const describeTtsConfig = async () => {
   } catch {
     /* missing file is a normal state */
   }
+  const { apiKey, ...rest } = config
   return {
-    ...config,
+    ...rest,
+    apiKey: '',
+    apiKeySet: Boolean(apiKey),
+    apiKeyMask: apiKey ? `${'•'.repeat(Math.min(8, Math.max(0, apiKey.length - 4)))}${apiKey.slice(-4)}` : '',
+    apiKeySource: apiKey && process.env.DSH_FAIRY_TTS_APIKEY && apiKey === process.env.DSH_FAIRY_TTS_APIKEY ? 'env' : apiKey ? 'file' : 'none',
     referencePath: reference.file,
     referencePresent: reference.present,
     referenceBytes: reference.bytes,
@@ -144,7 +165,8 @@ export const describeTtsConfig = async () => {
     env: {
       ttsUrl: process.env.DSH_FAIRY_TTS_URL ?? null,
       docsUrl: process.env.DSH_FAIRY_DOCS_URL ?? null,
-      overridden: Boolean(process.env.DSH_FAIRY_TTS_URL || process.env.DSH_FAIRY_DOCS_URL),
+      apiKey: Boolean(process.env.DSH_FAIRY_TTS_APIKEY),
+      overridden: Boolean(process.env.DSH_FAIRY_TTS_URL || process.env.DSH_FAIRY_DOCS_URL || process.env.DSH_FAIRY_TTS_APIKEY),
     },
     effectivePrompt: referencePromptText(config),
   }
