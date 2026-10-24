@@ -8450,8 +8450,21 @@ function requireClient () {
 	      return body;
 	    };
 
-	    /** 32 kHz 16-bit mono PCM straight from the local engine. */
-	    const playPcm = async (buffer) => {
+	    /** Raw 32 kHz PCM from GPT-SoVITS, or a finished WAV from the yovoice engine. */
+	    const playAudio = async (buffer, contentType = '') => {
+	      const head = new Uint8Array(buffer, 0, Math.min(4, buffer.byteLength));
+	      const isRiff = head[0] === 0x52 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x46;
+	      const type = String(contentType || '').toLowerCase();
+	      if (isRiff || type.includes('wav') || type.includes('mpeg') || type.includes('ogg')) {
+	        const decodedContext = new (window.AudioContext || window.webkitAudioContext)();
+	        const decoded = await decodedContext.decodeAudioData(buffer.slice(0));
+	        const decodedSource = decodedContext.createBufferSource();
+	        decodedSource.buffer = decoded;
+	        decodedSource.connect(decodedContext.destination);
+	        decodedSource.onended = () => { decodedContext.close().catch(() => {}); };
+	        decodedSource.start(0);
+	        return;
+	      }
 	      const samples = new Int16Array(buffer);
 	      const context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 32000 });
 	      const audio = context.createBuffer(1, samples.length, 32000);
@@ -8468,11 +8481,20 @@ function requireClient () {
 	      const [config, setConfig] = React.useState(null);
 	      const [state, setState] = React.useState('loading');
 	      const [note, setNote] = React.useState('');
-	      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '', apiKey: '' });
+	      const [draft, setDraft] = React.useState({ protocol: 'gpt-sovits', ttsUrl: '', docsUrl: '', promptText: '', apiKey: '', modelId: '', voiceId: '' });
+	      const [engine, setEngine] = React.useState(null);
 	      const applyConfig = (value) => {
 	        if (!value) return;
 	        setConfig(value);
-	        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '', apiKey: '' });
+	        setDraft({
+	          protocol: value.protocol === 'yovoice' ? 'yovoice' : 'gpt-sovits',
+	          ttsUrl: value.ttsUrl || '',
+	          docsUrl: value.docsUrl || '',
+	          promptText: value.promptText || '',
+	          apiKey: '',
+	          modelId: value.modelId || '',
+	          voiceId: value.voiceId || '',
+	        });
 	      };
 	      React.useEffect(() => {
 	        let cancelled = false;
@@ -8491,7 +8513,7 @@ function requireClient () {
 	        try {
 	          /* An empty key field means "leave the stored key alone"; the host
 	           * treats a missing apiKey the same way, so only send a real value. */
-	          const payload = { ttsUrl: draft.ttsUrl, docsUrl: draft.docsUrl, promptText: draft.promptText };
+	          const payload = { protocol: draft.protocol, ttsUrl: draft.ttsUrl, docsUrl: draft.docsUrl, promptText: draft.promptText, modelId: draft.modelId, voiceId: draft.voiceId };
 	          if (draft.apiKey.trim()) payload.apiKey = draft.apiKey.trim();
 	          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(payload) });
 	          applyConfig(body?.value);
@@ -8534,12 +8556,28 @@ function requireClient () {
 	            body: JSON.stringify({ text: '检测完成。主人，Fairy 在线。' }),
 	          });
 	          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-	          await playPcm(await response.arrayBuffer());
+	          await playAudio(await response.arrayBuffer(), response.headers.get('content-type') || '');
 	          setState('ready');
 	          setNote('已播放试听');
 	        } catch (error) {
 	          setState('error');
 	          setNote(`试听失败：${error.message || error}`);
+	        }
+	      };
+	      /* yovoice lists installed models and imported reference voices; asking the
+	       * engine beats hand-copying identifiers out of its UI. */
+	      const loadEngine = async () => {
+	        setState('loading-engine');
+	        try {
+	          const body = await jsonFetch('/fairy-voice/engine');
+	          const value = body?.value || null;
+	          setEngine(value);
+	          setState('ready');
+	          if (!value?.supported) setNote('当前协议不需要模型/音色列表（GPT-SoVITS 用参考音频）');
+	          else setNote(`已读取 ${value.models.length} 个模型、${value.voices.length} 个音色`);
+	        } catch (error) {
+	          setState('error');
+	          setNote(`读取引擎信息失败：${error.message || error}`);
 	        }
 	      };
 	      const upload = async (event) => {
@@ -8567,23 +8605,48 @@ function requireClient () {
 	      }
 	      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
 	        jsx('h4', { children: '语音服务（TTS）' }),
-	        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL / DSH_FAIRY_TTS_APIKEY，这里保存的值优先。' }),
-	        jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
-	        jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('p', { className: 'dsh-fairy-hint', children: '默认读取 DSH_FAIRY_TTS_* 环境变量，这里保存的值优先。GPT-SoVITS 兼容端点返回原始 PCM；yovoice / IndexTTS 返回 WAV。' }),
+	        jsx('label', { children: ['协议：', jsx('select', {
+	          value: draft.protocol,
+	          onChange: (event) => setDraft({ ...draft, protocol: event.target.value }),
+	          children: [
+	            jsx('option', { value: 'gpt-sovits', children: 'GPT-SoVITS 兼容（原始 PCM）' }),
+	            jsx('option', { value: 'yovoice', children: 'yovoice / IndexTTS（WAV）' }),
+	          ],
+	        })] }),
+	        jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/generate' : 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/status' : 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
 	        jsx('label', { children: ['API Key（可选）：', jsx('input', { type: 'password', value: draft.apiKey, autoComplete: 'off', placeholder: config?.apiKeySet ? `已设置 ${config.apiKeyMask || ''}（留空保持不变）` : '云端语音服务需要时填写，本地 GPT-SoVITS 留空', onChange: (event) => setDraft({ ...draft, apiKey: event.target.value }), style: { width: '100%' } })] }),
 	        config?.apiKeySet
 	          ? jsxs('div', { className: 'dsh-fairy-hint', children: [
 	              `API Key 已设置${config.apiKeySource === 'env' ? '（来自 DSH_FAIRY_TTS_APIKEY）' : ''}，请求会带 Authorization: Bearer …；`,
 	              jsx('button', { type: 'button', onClick: clearKey, disabled: state === 'saving', children: '清除 API Key' }),
 	            ] })
-	          : jsx('div', { className: 'dsh-fairy-hint', children: '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
-	        jsx('label', { children: ['参考音频提示文本：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
-	        jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
+	          : jsx('div', { className: 'dsh-fairy-hint', children: draft.protocol === 'yovoice' ? '未设置 API Key；yovoice 的 /v1/* 端点通常需要 Authorization 头。' : '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
+	        draft.protocol === 'yovoice'
+	          ? jsxs('div', { className: 'dsh-fairy-tts-engine', children: [
+	              jsx('label', { children: ['模型：', jsx('input', { type: 'text', list: 'dsh-fairy-tts-models', value: draft.modelId, placeholder: '例如 index-2.5-f16（留空用引擎默认）', onChange: (event) => setDraft({ ...draft, modelId: event.target.value }), style: { width: '100%' } })] }),
+	              jsx('datalist', { id: 'dsh-fairy-tts-models', children: (engine?.models || []).map((model) => jsx('option', { value: model.id })) }),
+	              jsx('label', { children: ['音色：', jsx('input', { type: 'text', list: 'dsh-fairy-tts-voices', value: draft.voiceId, placeholder: '引擎里导入的音色 id（留空用默认音色）', onChange: (event) => setDraft({ ...draft, voiceId: event.target.value }), style: { width: '100%' } })] }),
+	              jsx('datalist', { id: 'dsh-fairy-tts-voices', children: (engine?.voices || []).map((voice) => jsx('option', { value: voice.id, label: voice.name })) }),
+	              jsxs('div', { className: 'dsh-fairy-hint', children: [
+	                '音色来自引擎里已导入的参考音频；',
+	                jsx('button', { type: 'button', onClick: loadEngine, disabled: state === 'loading-engine', children: state === 'loading-engine' ? '读取中…' : '读取引擎模型/音色' }),
+	                engine?.supported ? ` 已读取 ${engine.models.length} 模型 / ${engine.voices.length} 音色` : '',
+	              ] }),
+	            ] })
+	          : null,
+	        jsx('label', { children: ['参考音频提示文本（GPT-SoVITS）：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
+	        draft.protocol === 'yovoice'
+	          ? null
+	          : jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
 	        jsxs('div', { className: 'dsh-fairy-actions', children: [
 	          jsx('button', { type: 'button', onClick: save, disabled: state === 'saving', children: state === 'saving' ? '保存中…' : '保存' }),
 	          jsx('button', { type: 'button', onClick: probe, disabled: state === 'probing', children: state === 'probing' ? '检测中…' : '测试连接' }),
 	          jsx('button', { type: 'button', onClick: preview, disabled: state === 'previewing', children: state === 'previewing' ? '合成中…' : '试听' }),
-	          jsx('label', { className: 'dsh-fairy-upload', children: ['上传参考音频', jsx('input', { type: 'file', accept: 'audio/*', onChange: upload })] }),
+	          draft.protocol === 'yovoice'
+	            ? null
+	            : jsx('label', { className: 'dsh-fairy-upload', children: ['上传参考音频', jsx('input', { type: 'file', accept: 'audio/*', onChange: upload })] }),
 	        ] }),
 	        note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
 	      ] });

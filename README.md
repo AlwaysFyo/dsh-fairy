@@ -45,7 +45,7 @@
 | --- | --- | --- |
 | HDD 视觉 | 启用 HDD、日间模式、显示主视觉、低功耗 | `$DSH_HOME/fairy-visual/settings.json` |
 | 身份 | 铃 / 哲 / 自定义（自定义时另有第二助手、家庭成员） | `$DSH_HOME/fairy-identity/identity.json` |
-| 语音服务（TTS） | `ttsUrl`、`docsUrl`、API Key（可选，Bearer）、参考音频提示文本、参考音频文件（≤24 MB，wav/mp3/flac/ogg/m4a）、保存 / 测试连接 / 试听 / 清除 API Key | `$DSH_HOME/fairy-voice/tts-config.json`，音频落在 `$DSH_HOME/fairy-voice/runtime/reference/` |
+| 语音服务（TTS） | 协议（`gpt-sovits` / `yovoice`）、`ttsUrl`、`docsUrl`、API Key（可选，Bearer）、参考音频提示文本、参考音频文件（≤24 MB，wav/mp3/flac/ogg/m4a）、yovoice 的模型与音色 id、保存 / 测试连接 / 试听 / 读取引擎模型音色 / 清除 API Key | `$DSH_HOME/fairy-voice/tts-config.json`，音频落在 `$DSH_HOME/fairy-voice/runtime/reference/` |
 | Fairy 人设 | 字数不限的人设正文（留空 = 内置参考人设），可检索并插入 11 份参考语料 | `$DSH_HOME/fairy-persona/persona.json` |
 
 三者如何进入模型：
@@ -64,6 +64,12 @@
   `apiKeyMask`；留空提交表示「保持不变」，清空要点「清除 API Key」（`clearApiKey: true`）。
   设置后探活与合成请求都带 `Authorization: Bearer <key>`，未设置则完全不带该头（本地 GPT-SoVITS 不受影响）。
   Key 以明文存在 `tts-config.json`（与 `voice-brain.json` 同属本机凭据文件，权限随 `$DSH_HOME`）。
+- **两种 TTS 协议**（`protocol` 字段）：`gpt-sovits` 发参考实现的
+  `{text, text_lang, ref_audio_path, prompt_text, …}` 并回流原始 PCM；`yovoice` 发
+  `{text, modelId?, voiceId?, referenceText?}` 并回流 **WAV**（浏览器按 `RIFF` 头走
+  `decodeAudioData`）。探活也分流：`gpt-sovits` 看 `/docs` 的 2xx，`yovoice` 看
+  `GET /v1/status` 的 `ready === true`。`GET /fairy-voice/engine` 会把引擎的
+  `/v1/models`、`/v1/voices` 拉回来给界面下拉补全。细节见 `docs/TTS.md`。
 
 新增的宿主路由：`GET /fairy-voice/config`、`POST /fairy-voice/config/update`、
 `POST /fairy-voice/reference`、`GET /dsh-fairy/persona`、`GET /dsh-fairy/persona/corpus`、
@@ -107,6 +113,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | `node tools/cdp/voice-e2e.mjs <url>` | `/fairy-voice/status` → `/tts` → 32 kHz 实际播放 → 音频控件几何 |
 | `node tools/cdp/persona-check.mjs <url>` | 13 项只读不变量：人设合成、身份条款、语料清单/读取/路径穿越、**真实组装里是否存在 `fairy:persona`**、TTS 配置与状态 |
 | `node tools/cdp/tts-auth-check.mjs <hostUrl> <mockAuthUrl>` | 15 项 API Key 不变量：落盘、**不回显明文**、掩码末四位、探活与合成是否带 `Authorization: Bearer`、无关保存保留 key、`clearApiKey` 清除后不再发头（临时把端点指向 mock，结束恢复原值） |
+| `node tools/cdp/yovoice-check.mjs <hostUrl> <token> <mockUrl>` | 13 项 yovoice 协议不变量：配置含 `protocol`/`modelId`/`voiceId`、保存后 `protocol=yovoice`、`/v1/status` 的 `ready` 判定、`/fairy-voice/engine` 拉到 models+voices、合成返回 `RIFF` WAV（32 kHz/16-bit）、探活与合成两条都带 `Bearer`、请求体含 modelId/voiceId |
 | `node tools/mock-tts.mjs --port=9881` | GPT-SoVITS 兼容的假 TTS，用来验证整条语音链；`GET /__auth` 回报最近一次收到的 `authorization` 头 |
 | `node tools/parity*` 见上 | — |
 
@@ -158,6 +165,8 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 设置页 TTS 区块 | 真实 UI 上传参考音频：`referencePresent:true`、`referenceBytes:64044`、文件名回显；「测试连接」→「连接正常」；「试听」→ `POST /fairy-voice/tts 200`、43 520 B PCM 并提示「已播放试听」 |
 | 设置页人设区块 | textarea `maxLength = -1`（不限字数）；真实输入 17 字并点「保存人设」→ `/dsh-fairy/persona` 立刻报告 `source:custom`、`chars:61`，提示「已保存，下一条消息生效」 |
 | TTS API Key | 真实 UI 输入并保存 → 宿主 `apiKeySet:true`、`apiKeyMask:••••••••7788`、响应正文无明文；mock 侧 `/__auth` 收到 `Bearer sk-…`（探活与合成两条都带）；点「清除 API Key」→ `apiKeySet:false`、请求不再带该头；15 项不变量由 `tools/cdp/tts-auth-check.mjs` 全绿 |
+| TTS 双协议 | 协议下拉切 `yovoice` 后出现模型/音色字段、「读取引擎模型/音色」从 mock 拉到 `mock-index-tts2` + `mock-voice-001`；「试听」返回 `audio/wav`（38444 B），浏览器 `decodeAudioData` 解码 43 564 B 后 `createBufferSource` 播放并提示「已播放试听」；切回 `gpt-sovits` 后上传控件恢复、模型字段消失；13 项不变量由 `tools/cdp/yovoice-check.mjs` 全绿 |
+| 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
 
 ### 设置面板的打开前提
 

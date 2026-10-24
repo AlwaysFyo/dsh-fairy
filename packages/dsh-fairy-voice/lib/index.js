@@ -7,7 +7,9 @@ import { chmod, mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs
 import { randomUUID } from 'node:crypto';
 import { createLocalTtsTransport, createPcmStreamHandler } from './server/local-tts-proxy.js';
 import {
+  authorizationHeader,
   describeTtsConfig,
+  engineApiBase,
   readTtsConfigSync,
   referenceAudioPath,
   referencePromptText,
@@ -474,11 +476,14 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
     resolveConfig: () => {
       const config = readTtsConfigSync();
       return {
+        protocol: config.protocol,
         ttsUrl: config.ttsUrl,
         docsUrl: config.docsUrl,
         referenceAudioPath: referenceAudioPath(config),
         referencePrompt: referencePromptText(config),
         apiKey: config.apiKey,
+        modelId: config.modelId,
+        voiceId: config.voiceId,
       };
     },
     ttsTimeoutMs: TTS_TIMEOUT_MS,
@@ -537,6 +542,41 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
         const code = error?.code || (error?.message === 'invalid-json' ? 'invalid-json' : 'reference-audio-missing');
         diagnostics.warn('tts.reference.upload', { code }, error);
         sendJson(res, statusFor(code), { error: publicError(code) });
+      }
+    },
+    /* The yovoice engine lists its installed models and imported reference
+     * voices over the same /v1 surface, so the settings page can offer real
+     * choices instead of asking the user to hand-copy identifiers. */
+    ttsEngine: async (_req, res) => {
+      const config = readTtsConfigSync();
+      const base = engineApiBase(config);
+      const value = { protocol: config.protocol, modelId: config.modelId, voiceId: config.voiceId, supported: false, models: [], voices: [] };
+      if (config.protocol !== 'yovoice' || !base) {
+        sendJson(res, 200, { ok: true, value });
+        return;
+      }
+      const headers = authorizationHeader(config);
+      const getJson = async (path) => {
+        const response = await fetchImpl(`${base}${path}`, { method: 'GET', headers, signal: AbortSignal.timeout(STATUS_TIMEOUT_MS) });
+        if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+        return await response.json();
+      };
+      try {
+        const [models, voices] = await Promise.all([getJson('/models'), getJson('/voices')]);
+        const installed = Array.isArray(models?.installed) ? models.installed : [];
+        const list = Array.isArray(voices) ? voices : Array.isArray(voices?.voices) ? voices.voices : [];
+        sendJson(res, 200, {
+          ok: true,
+          value: {
+            ...value,
+            supported: true,
+            models: installed.map((model) => ({ id: model?.id ?? '', managed: model?.managed === true })),
+            voices: list.map((voice) => ({ id: voice?.id ?? '', name: voice?.name ?? '', duration: voice?.duration ?? null })),
+          },
+        });
+      } catch (error) {
+        diagnostics.warn('tts.engine.catalog', {}, error);
+        sendJson(res, 502, { error: publicError('local-service-unavailable') });
       }
     },
     status: async (_req, res) => {
@@ -626,7 +666,18 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
         const upstream = await localTtsTransport.stream(text, controller.signal);
         const response = upstream.response || upstream;
         releaseUpstream = upstream.release || null;
-        if (!response.ok) throw Object.assign(new Error('local synthesis failed'), { code: 'local-service-failed' });
+        if (!response.ok) {
+          /* Keep one short line of the engine's own complaint: "generation
+           * failed" alone leaves the user unable to tell a token problem from
+           * a missing model or a broken backend. */
+          let upstreamDetail = '';
+          try {
+            upstreamDetail = (await response.text()).slice(0, 200).trim();
+          } catch {
+            /* an empty error body is fine */
+          }
+          throw Object.assign(new Error('local synthesis failed'), { code: 'local-service-failed', upstreamDetail });
+        }
         res.statusCode = 200;
         res.setHeader('Content-Type', response.headers.get('content-type') || 'audio/raw');
         res.setHeader('Cache-Control', 'no-store');
@@ -640,7 +691,9 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
         if (res.headersSent) {
           if (!res.destroyed) res.destroy(error);
         } else if (!res.writableEnded) {
-          sendJson(res, statusFor(code), { error: publicError(code) });
+          const payload = publicError(code);
+          if (error?.upstreamDetail) payload.message = `${payload.message}（${error.upstreamDetail}）`;
+          sendJson(res, statusFor(code), { error: payload });
         }
       } finally {
         diagnostics.metric('tts.stream', startedAt, { aborted: controller.signal.aborted, headers_sent: res.headersSent });
@@ -665,6 +718,7 @@ export function apply(ctx) {
     const unregisterTtsConfig = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/config', handler: handlers.ttsConfig });
     const unregisterTtsConfigUpdate = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/config/update', handler: handlers.ttsConfigUpdate });
     const unregisterTtsReference = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/reference', handler: handlers.ttsReference });
+    const unregisterTtsEngine = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/engine', handler: handlers.ttsEngine });
     const unregisterTts = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/tts', handler: handlers.tts });
     const unregisterBrainStatus = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/brain/status', handler: handlers.voiceBrainStatus });
     const unregisterBrainConfig = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/brain/config', handler: handlers.voiceBrainConfig });
@@ -676,6 +730,7 @@ export function apply(ctx) {
       unregisterTtsConfig?.();
       unregisterTtsConfigUpdate?.();
       unregisterTtsReference?.();
+      unregisterTtsEngine?.();
       unregisterTts?.();
       unregisterBrainStatus?.();
       unregisterBrainConfig?.();

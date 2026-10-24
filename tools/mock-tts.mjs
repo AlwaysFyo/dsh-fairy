@@ -39,13 +39,70 @@ function synthPcm(text) {
 	return out;
 }
 
-const seen = { tts: null, docs: null, ttsCount: 0 };
+const seen = { tts: null, docs: null, ttsCount: 0, status: null, generate: null, generateCount: 0, lastGenerateBody: null };
+
+/** yovoice answers /v1/generate with a finished WAV, not a raw PCM stream. */
+function wavFromPcm(pcm) {
+	const header = Buffer.alloc(44);
+	header.write('RIFF', 0, 'ascii');
+	header.writeUInt32LE(36 + pcm.length, 4);
+	header.write('WAVE', 8, 'ascii');
+	header.write('fmt ', 12, 'ascii');
+	header.writeUInt32LE(16, 16);
+	header.writeUInt16LE(1, 20); // PCM
+	header.writeUInt16LE(1, 22); // mono
+	header.writeUInt32LE(sampleRate, 24);
+	header.writeUInt32LE(sampleRate * 2, 28);
+	header.writeUInt16LE(2, 32);
+	header.writeUInt16LE(16, 34);
+	header.write('data', 36, 'ascii');
+	header.writeUInt32LE(pcm.length, 40);
+	return Buffer.concat([header, pcm]);
+}
+
+const readJsonBody = async (req) => {
+	const chunks = [];
+	for await (const chunk of req) chunks.push(chunk);
+	try {
+		return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+	} catch {
+		return {};
+	}
+};
 
 const server = http.createServer(async (req, res) => {
 	const url = new URL(req.url, `http://127.0.0.1:${port}`);
 	if (req.method === 'GET' && url.pathname === '/__auth') {
 		res.writeHead(200, { 'content-type': 'application/json' });
 		res.end(JSON.stringify(seen));
+		return;
+	}
+	/* ---- yovoice-compatible surface, used while the real engine is down ---- */
+	if (req.method === 'GET' && url.pathname === '/v1/status') {
+		seen.status = req.headers.authorization ?? null;
+		res.writeHead(200, { 'content-type': 'application/json' });
+		res.end(JSON.stringify({ ready: true, engineVersion: 'mock-v0.9.1', runtimeVersion: 'mock', activity: { status: 'idle' } }));
+		return;
+	}
+	if (req.method === 'GET' && url.pathname === '/v1/models') {
+		res.writeHead(200, { 'content-type': 'application/json' });
+		res.end(JSON.stringify({ installed: [{ id: 'mock-index-tts2', path: 'mock.gguf', managed: true }] }));
+		return;
+	}
+	if (req.method === 'GET' && url.pathname === '/v1/voices') {
+		res.writeHead(200, { 'content-type': 'application/json' });
+		res.end(JSON.stringify([{ source: 'import', id: 'mock-voice-001', name: 'Mock 音色', duration: 1.2 }]));
+		return;
+	}
+	if (req.method === 'POST' && url.pathname === '/v1/generate') {
+		seen.generate = req.headers.authorization ?? null;
+		seen.generateCount += 1;
+		const body = await readJsonBody(req);
+		seen.lastGenerateBody = { keys: Object.keys(body), modelId: body.modelId ?? null, voiceId: body.voiceId ?? null, referenceText: body.referenceText ?? null };
+		const wav = wavFromPcm(synthPcm(body.text || ''));
+		console.error(`[mock-tts] generate text=${JSON.stringify(String(body.text || '').slice(0, 40))} modelId=${body.modelId ?? '-'} voiceId=${body.voiceId ?? '-'} bytes=${wav.length}`);
+		res.writeHead(200, { 'content-type': 'audio/wav', 'cache-control': 'no-store', 'x-mock-tts': 'yovoice' });
+		res.end(wav);
 		return;
 	}
 	if (req.method === 'GET' && (url.pathname === '/docs' || url.pathname === '/')) {
@@ -62,14 +119,7 @@ const server = http.createServer(async (req, res) => {
 	seen.tts = req.headers.authorization ?? null;
 	seen.ttsCount += 1;
 
-	const chunks = [];
-	for await (const chunk of req) chunks.push(chunk);
-	let body = {};
-	try {
-		body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-	} catch {
-		/* keep empty */
-	}
+	const body = await readJsonBody(req);
 	const text = body.text || '';
 	const pcm = synthPcm(text);
 	console.error(

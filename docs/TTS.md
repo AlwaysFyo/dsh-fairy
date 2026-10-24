@@ -51,21 +51,72 @@ CUDA 后端），音色和情感是这批开源模型里最接近「人说话」
 
 ## 为什么不是直接复用 yovoice 的服务
 
-你本机 `127.0.0.1:9880` 现在被 `yovoice-service.exe`（PID 8164，`D:\Public\Applications\yovoice`）占着：
+> 现在**已经直接复用了**——见下一节「yovoice / IndexTTS 协议（已内置）」。
+> 下面保留当时的探测结论，用来说明它的 HTTP 面为什么不是 GPT-SoVITS 形状。
 
-- `GET /docs` → 200，是 Swagger UI（标题「yovoice API」）；
-- `GET /openapi.json`、`GET /health`、`POST /tts` → 全部 **401**，且 `WWW-Authenticate` 为空，
-  密钥不在任何可读配置里（`E:\Models\Yovoice\.yovoice\` 下只有 `server.json` / `*.db` / `preferences`）；
-- 它的引擎在 **7332**（`runtime/server.json` → `backend: cuda`、`models: [{family: index_tts2, path: …index-tts2_5-f16.gguf}]`）。
+你本机 `127.0.0.1:9880` 现在被 `yovoice-service.exe`（`D:\Public\Applications\yovoice`）占着：
 
-也就是说：**引擎能力你有，但它的 HTTP 面不是 GPT-SoVITS 形状，而且带鉴权**。
-两条路都可以，取决于你想不想让我改代码去适配它：
+- `GET /docs` → 200，是 Swagger UI（标题「yovoice API」），真正的 spec 在 `/docs/openapi.json`；
+- `GET /v1/*` 需要 `Authorization: Bearer <token>`（401 时 `WWW-Authenticate` 为空）；
+- 路由是 `/v1/{status,models,voices,generate,jobs/{id},audio/{id}}`，`POST /v1/generate`
+  **同步返回整段 WAV**，请求体是 `{text, modelId, voiceId, referenceText, …}`。
 
-1. **保持 0 改动**：换一个 GPT-SoVITS 兼容端点（下面第二节），Fairy 立刻可用；
-2. **接 yovoice**：我需要它的 API key（或在 yovoice 里开一个免鉴权的本地端点），
-   我再写 `lib/server/local-tts-proxy.js` 的 provider 分支把字段映射过去。
+也就是说：**引擎能力你有，但它的 HTTP 面既不是 GPT-SoVITS 形状，还带鉴权**。
+两条路都可以，现在两条都支持了：
 
-## 一、最省事：GPT-SoVITS 自带 api 服务
+1. **GPT-SoVITS 兼容端点**（下面第二节）——默认协议，零改动；
+2. **yovoice**——设置里把「协议」切成 `yovoice`，填端点、token、模型/音色即可（下文）。
+
+## 二、yovoice / IndexTTS 协议（已内置）
+
+「Fairy 控制台 → 语音服务（TTS）」的**协议**下拉选 `yovoice / IndexTTS（WAV）`，
+然后：
+
+| 字段 | 填什么（本机示例） |
+|---|---|
+| 协议 | `yovoice` |
+| 合成端点 | `http://127.0.0.1:9880/v1/generate` |
+| 探活端点 | `http://127.0.0.1:9880/v1/status` |
+| API Key | yovoice 的 Bearer token（`/v1/status` 不填会 401 就是它） |
+| 模型 | `index-2.5-f16`（点「读取引擎模型/音色」从 `/v1/models` 拉） |
+| 音色 | `9418de82…`（同一按钮从 `/v1/voices` 拉，显示名字带时长） |
+
+实现要点：
+
+- 请求体换成 `{text, modelId?, voiceId?, referenceText?}`，认证沿用 `Authorization: Bearer`；
+- 响应是 **WAV**，宿主原样透传上游 `content-type`，浏览器侧检测 `RIFF` 头走
+  `decodeAudioData`，不再是「PCM 固定 32 kHz」这一条路；
+- 探活用 `GET /v1/status` 的 `ready === true` 判定（200 但 `ready:false` 会报「未就绪」并带上
+  `activity.errorCode`）；
+- `GET /fairy-voice/engine` 会同时拉 `/v1/models` 与 `/v1/voices` 给下拉补全；
+- 生成失败时错误信息会**带一行引擎自己的话**，例如
+  `本地 Fairy 服务未能生成音频。（语音生成失败：@yovoice.error.generateFailed）`。
+
+### 本机 yovoice 当前的坑（2026-10-24 实测）
+
+`POST /v1/generate` 稳定 500，yovoice 自己的日志给了根因：
+
+```
+last-inference-error.txt:
+  CUDA backend requested but registry 'CUDA' has no device 0
+  (available: CPU:0 "13th Gen Intel(R) Core(TM) i5-13600KF")
+engine.log:
+  ggml_cuda_init: failed to initialize CUDA: (null)
+service.log:
+  engine.started backend:"cuda13" → engine.ready → engine.stopped exit:"exit status 1"
+```
+
+即 **v0.9.1 的 cuda13 runtime 与这台机器的驱动（RTX 4070 SUPER / 560.94）不匹配**，
+引擎启动约 1.5 s 后在第一次推理时退出。三条修法任选：
+
+1. 把 NVIDIA 驱动升到支持 CUDA 13 的版本（最彻底）；
+2. 在 yovoice 里把后端切成 **CPU**（`runtime/server.json` 的 `backend`，慢但能跑）；
+3. 装 yovoice 里更旧的 CUDA runtime 版本（`runtimes/` 下）。
+
+修之前，Fairy 这边的「测试连接」会显示**正常**（`/v1/status` 确实 `ready:true`），
+点「试听」才会拿到上面那条 502 —— 原因是引擎活着但推理崩了。
+
+## 三、最省事：GPT-SoVITS 自带 api 服务
 
 ```bash
 # GPT-SoVITS 仓库根目录
@@ -79,49 +130,27 @@ python api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml
   缺了会回落到固定提示语并打 `reference.prompt.load` 失败日志（不影响其它功能）。
 - 用 `DSH_HOME` 隔离实例时，这两个文件读的是 `$DSH_HOME/fairy-voice/runtime/reference/`。
 
-## 二、想用你已有的 IndexTTS2
+## 四、验证链路（不需要真模型也能跑）
 
-IndexTTS2 的输出质量明显高于 GPT-SoVITS v2（韵律、情感、长短停顿都更自然），
-而且你已经有权重和 CUDA 环境。需要一层薄适配器：
-
-```
-Fairy 宿主 ──▶ /fairy-voice/tts ──▶ adapter（新，~40 行）──▶ yovoice / IndexTTS2
-```
-
-适配器要做的事只有三件：
-
-1. 把 `{text, text_lang, ref_audio_path, prompt_text, text_split_method}` 映射成
-   IndexTTS2 的输入（`spk_audio_prompt` + `text` + 情感向量/强度）；
-2. 把返回的 wav 去掉 44 字节头 → 裸 PCM（或让适配器直接 `ffmpeg -f s16le` 转一次）；
-3. 采样率对齐到 **32000 Hz**（`PCM_SAMPLE_RATE` 是硬编码常量；改成 24 kHz 需要同时改
-   `lib/client.js` 里的解码常量）。
-
-如果你愿意给出 yovoice 的 key，或允许我在 yovoice 里加一个免鉴权的
-`POST /local/gpt-sovits-compat` 端点，这层我可以直接写进 `dsh-fairy-voice`，
-用 `DSH_FAIRY_TTS_PROVIDER=yovoice` 切换。
-
-## 三、验证链路（不需要真模型也能跑）
-
-仓库自带一个 GPT-SoVITS 兼容的假服务，用来验证「浏览器 → 宿主 → TTS → 播放」整条链：
+仓库自带一个**双协议**假服务，用来验证「浏览器 → 宿主 → TTS → 播放」整条链：
 
 ```powershell
 node tools/mock-tts.mjs --port=9881
-$env:DSH_FAIRY_TTS_URL='http://127.0.0.1:9881/tts'
-$env:DSH_FAIRY_DOCS_URL='http://127.0.0.1:9881/docs'
-# 用这个环境起隔离实例，然后：
-node tools/cdp/voice-e2e.mjs http://127.0.0.1:3400/?token=…
+# GPT-SoVITS 形状：POST /tts  → audio/pcm（raw PCM）
+# yovoice 形状：GET /v1/status|/v1/models|/v1/voices、POST /v1/generate → audio/wav
+node tools/cdp/yovoice-check.mjs http://127.0.0.1:3400 <token> http://127.0.0.1:9881
 ```
 
 已实测通过的结果（Chromium + CDP）：
 
 - `GET /fairy-voice/status` → `{"available":true,"reason":null}`
-- `POST /fairy-voice/tts` → `200`，`Content-Type: audio/pcm`，53 760 字节
-- 浏览器侧解码：38 400 字节 → 19 200 样本 → 32 kHz 下 0.6 s，峰值 0.459，**实际出声**
+- GPT-SoVITS 路径：`POST /fairy-voice/tts` → `200`，`Content-Type: audio/pcm`，53 760 字节；
+  浏览器侧 38 400 字节 → 19 200 样本 → 32 kHz 下 0.6 s，峰值 0.459，**实际出声**
+- yovoice 路径（mock）：`POST /v1/generate` → `audio/wav`，宿主原样透传，浏览器
+  `decodeAudioData` 解码 43 564 字节并播放，提示「已播放试听」
 - 音频控件：`[aria-label="Fairy 朗读控制"]` = `[1876,1077,152,28]`，波形 30 根条
 
-换成真实 GPT-SoVITS 时，只需把 `DSH_FAIRY_TTS_URL` 去掉（默认就是 `127.0.0.1:9880/tts`）。
-
-## 四、选型细节（如果你要自己挑）
+## 五、选型细节（如果你要自己挑）
 
 - **中文朗读自然度**：IndexTTS2 ≳ CosyVoice3 > CosyVoice2 > GPT-SoVITS v2 > ChatTTS > edge-tts。
 - **零样本克隆还原度**：CosyVoice3 ≈ IndexTTS2 > GPT-SoVITS v2（短参考音频时 GPT-SoVITS 更挑音频质量）。

@@ -15,14 +15,22 @@ export const referenceDir = () => join(dshHome(), 'fairy-voice', 'runtime', 'ref
 
 const MAX_PROMPT_LENGTH = 4_000
 const MAX_API_KEY_LENGTH = 512
+const MAX_ID_LENGTH = 120
 const MAX_AUDIO_BYTES = 24 * 1024 * 1024
 
+/* `gpt-sovits` is the reference project's body shape (raw PCM streaming);
+ * `yovoice` is the local IndexTTS engine, which returns a finished WAV. */
+export const TTS_PROTOCOLS = ['gpt-sovits', 'yovoice']
+
 export const envDefaults = () => ({
+  protocol: TTS_PROTOCOLS.includes(process.env.DSH_FAIRY_TTS_PROTOCOL) ? process.env.DSH_FAIRY_TTS_PROTOCOL : 'gpt-sovits',
   ttsUrl: process.env.DSH_FAIRY_TTS_URL || 'http://127.0.0.1:9880/tts',
   docsUrl: process.env.DSH_FAIRY_DOCS_URL || 'http://127.0.0.1:9880/docs',
   referenceAudio: 'fairy_ref.wav',
   promptText: '',
   apiKey: process.env.DSH_FAIRY_TTS_APIKEY || '',
+  modelId: process.env.DSH_FAIRY_TTS_MODEL || '',
+  voiceId: process.env.DSH_FAIRY_TTS_VOICE || '',
 })
 
 const sanitizeUrl = (value, fallback) => {
@@ -48,12 +56,16 @@ export const normalizeTtsConfig = (raw) => {
   const source = raw && typeof raw === 'object' ? raw : {}
   const promptText = typeof source.promptText === 'string' ? source.promptText.slice(0, MAX_PROMPT_LENGTH) : defaults.promptText
   const apiKey = typeof source.apiKey === 'string' ? source.apiKey.trim().slice(0, MAX_API_KEY_LENGTH) : defaults.apiKey
+  const identifier = (value, fallback) => (typeof value === 'string' ? value.trim().slice(0, MAX_ID_LENGTH) : fallback)
   return {
+    protocol: TTS_PROTOCOLS.includes(source.protocol) ? source.protocol : defaults.protocol,
     ttsUrl: sanitizeUrl(source.ttsUrl, defaults.ttsUrl),
     docsUrl: sanitizeUrl(source.docsUrl, defaults.docsUrl),
     referenceAudio: sanitizeAudioName(source.referenceAudio, defaults.referenceAudio),
     promptText,
     apiKey,
+    modelId: identifier(source.modelId, defaults.modelId),
+    voiceId: identifier(source.voiceId, defaults.voiceId),
   }
 }
 
@@ -95,6 +107,17 @@ export const writeTtsConfig = async (patch) => {
 export const authorizationHeader = (config) => {
   const key = typeof config?.apiKey === 'string' ? config.apiKey.trim() : ''
   return key ? { authorization: `Bearer ${key}` } : {}
+}
+
+/** yovoice exposes /v1/models and /v1/voices alongside /v1/generate. */
+export const engineApiBase = (config) => {
+  try {
+    const url = new URL(typeof config?.ttsUrl === 'string' ? config.ttsUrl : '')
+    const suffix = url.pathname.replace(/\/v1\/[^/]+\/?$/, '/v1')
+    return `${url.origin}${suffix}`
+  } catch {
+    return ''
+  }
 }
 
 const decodeAudio = (value) => {

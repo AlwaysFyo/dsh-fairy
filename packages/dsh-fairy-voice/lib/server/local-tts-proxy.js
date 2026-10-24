@@ -100,17 +100,40 @@ export function createLocalTtsTransport({
     const key = typeof config?.apiKey === 'string' ? config.apiKey.trim() : '';
     return key ? { authorization: `Bearer ${key}` } : {};
   };
+  /* Two request shapes share one transport: the reference implementation's
+   * GPT-SoVITS body, and the local yovoice engine (IndexTTS family), which
+   * answers with a finished WAV instead of a raw PCM stream. */
+  const isYovoice = (config) => config?.protocol === 'yovoice';
+  const gptSovitsBody = (text, config) => ({ text, text_lang: 'zh', ref_audio_path: config.referenceAudioPath, prompt_text: config.referencePrompt, prompt_lang: 'zh', text_split_method: 'cut5', batch_size: 1, media_type: 'raw', streaming_mode: 1, fragment_interval: 0.14, parallel_infer: false });
+  const yovoiceBody = (text, config) => {
+    const body = { text };
+    for (const [field, key] of [['modelId', 'modelId'], ['voiceId', 'voiceId'], ['referenceText', 'referenceText']]) {
+      const value = typeof config?.[field] === 'string' ? config[field].trim() : '';
+      if (value) body[key] = value;
+    }
+    return body;
+  };
   const localTtsRequest = (text, config) => ({
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(config) },
-    body: JSON.stringify({ text, text_lang: 'zh', ref_audio_path: config.referenceAudioPath, prompt_text: config.referencePrompt, prompt_lang: 'zh', text_split_method: 'cut5', batch_size: 1, media_type: 'raw', streaming_mode: 1, fragment_interval: 0.14, parallel_infer: false }),
+    body: JSON.stringify(isYovoice(config) ? yovoiceBody(text, config) : gptSovitsBody(text, config)),
   });
   return {
     status(signal) {
       const config = current();
-      return fetchStatus(config.docsUrl, { method: 'GET', headers: authHeaders(config) }, statusTimeoutMs, signal).then((response) => {
+      return fetchStatus(config.docsUrl, { method: 'GET', headers: authHeaders(config) }, statusTimeoutMs, signal).then(async (response) => {
         if (!response.ok) throw new Error(`Fairy status returned ${response.status}`);
-        return { available: true, reason: null };
+        /* yovoice reports engine health in the body: a 200 with ready:false means
+         * the service is up but the engine cannot synthesize right now. */
+        if (!isYovoice(config)) return { available: true, reason: null };
+        let payload = null;
+        try {
+          payload = await response.json();
+        } catch {
+          throw new Error('Fairy status returned a non-JSON body');
+        }
+        if (payload?.ready === true) return { available: true, reason: null };
+        return { available: false, reason: `yovoice 未就绪（${payload?.activity?.errorCode || payload?.engineVersion || 'unknown'}）` };
       });
     },
     stream(text, signal) {
