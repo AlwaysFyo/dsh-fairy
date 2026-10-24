@@ -82,6 +82,31 @@ Modifications made by this project
     wide -> 40/58/26 px), and the blank-session fallback borrows the stock corner
     button's top edge for vertical alignment. No glyphs, labels or shapes are
     changed from the reference.
+14. Persona configuration replaces the reference's preset wiring. Fairy-DSH puts
+    its persona into `@deepseek-ai/dsh-persona` (the 0.1.1-era `config.text`
+    field) inside `.agent-presets/fairy/agent.cordis.yml` and samples its corpus
+    through a Python `fairy-core.runtime`. This port instead registers its own
+    `fairy:persona` prompt section (order 100, `interpolate: false`, text provider
+    re-evaluated on every assembly) and exposes that text as a settings field, so
+    the prompt can be edited without touching a profile. New code lives in
+    `packages/dsh-fairy-visual/src/persona.js` (composition, identity clause,
+    corpus access) plus the client-side `TtsSettings`/`PersonaSettings` blocks.
+15. Redistributed configuration assets: `packages/dsh-fairy-visual/assets/persona/`
+    reproduces the reference repository's `.agent-presets/fairy/` material —
+    `fairy-persona.md` is extracted from the `text:` block of its
+    `agent.cordis.yml`, and `corpus/` copies `preset.yml`, `ASSET-BOUNDARIES.json`,
+    `behavior/fairy_behavior_rules.json`, `canon/fairy_canon.json`,
+    `canon/fairy_anti_fanon.json`, `personality/fairy_personality.json`,
+    `personality/fairy_relationships.json`, `personality/fairy_world_view.json`,
+    `style/fairy_real_ai_antipatterns.json`, `style/fairy_speech_style.json` and
+    `style/fairy_voice_model.json` verbatim (341 KB in total). They remain under
+    the upstream Apache License 2.0 and ship as optional reference material only:
+    nothing is injected unless the operator inserts it in the settings UI.
+16. Local TTS configuration is new surface, not ported code: the reference reads
+    its endpoint from the environment and a fixed reference-audio path. This port
+    keeps those as defaults while adding a persisted override
+    (`$DSH_HOME/fairy-voice/tts-config.json`), a reference-audio upload endpoint
+    and a settings block.
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE

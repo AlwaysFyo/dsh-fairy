@@ -38,7 +38,8 @@
 	},
 	"files": [
 		"lib",
-		"src"
+		"src",
+		"assets"
 	],
 	"license": "Apache-2.0"
 }

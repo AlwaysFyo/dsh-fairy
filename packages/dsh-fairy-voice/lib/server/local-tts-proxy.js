@@ -79,29 +79,36 @@ export function createLocalTtsTransport({
   docsUrl,
   referenceAudioPath,
   referencePrompt,
+  resolveConfig,
   ttsTimeoutMs,
   statusTimeoutMs,
 } = {}) {
+  /* The UI can repoint the bridge at another engine without a restart, so the
+   * endpoint and reference clip are read per request when a resolver is given. */
+  const current = () => (typeof resolveConfig === 'function'
+    ? resolveConfig()
+    : { ttsUrl, docsUrl, referenceAudioPath, referencePrompt });
   const fetchStatus = (url, options, timeoutMs, signal) => fetchImpl === fetch
     ? localFetch(url, options, timeoutMs, signal)
     : fetchImpl(url, options);
   const stream = (url, options, timeoutMs, signal) => fetchImpl === fetch
     ? openLocalStream(url, options, timeoutMs, signal)
     : fetchImpl(url, { ...options, signal }).then((response) => ({ response, release: null }));
-  const localTtsRequest = (text) => ({
+  const localTtsRequest = (text, config) => ({
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, text_lang: 'zh', ref_audio_path: referenceAudioPath, prompt_text: referencePrompt, prompt_lang: 'zh', text_split_method: 'cut5', batch_size: 1, media_type: 'raw', streaming_mode: 1, fragment_interval: 0.14, parallel_infer: false }),
+    body: JSON.stringify({ text, text_lang: 'zh', ref_audio_path: config.referenceAudioPath, prompt_text: config.referencePrompt, prompt_lang: 'zh', text_split_method: 'cut5', batch_size: 1, media_type: 'raw', streaming_mode: 1, fragment_interval: 0.14, parallel_infer: false }),
   });
   return {
     status(signal) {
-      return fetchStatus(docsUrl, { method: 'GET' }, statusTimeoutMs, signal).then((response) => {
+      return fetchStatus(current().docsUrl, { method: 'GET' }, statusTimeoutMs, signal).then((response) => {
         if (!response.ok) throw new Error(`Fairy status returned ${response.status}`);
         return { available: true, reason: null };
       });
     },
     stream(text, signal) {
-      return stream(ttsUrl, localTtsRequest(text), ttsTimeoutMs, signal);
+      const config = current();
+      return stream(config.ttsUrl, localTtsRequest(text, config), ttsTimeoutMs, signal);
     },
   };
 }

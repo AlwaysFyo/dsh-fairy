@@ -871,6 +871,24 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 .dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important;border:0!important;border-radius:0!important;transform:none!important;background:radial-gradient(circle,transparent 0 4px,currentColor 4px 5.5px,transparent 5.5px)!important;-webkit-mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important;mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important}
 .dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}`);
 
+  // Settings blocks for the two new configuration surfaces (TTS bridge and
+  // persona). Stock settings rows are plain labels; these need a card, inputs
+  // and an action row, so give them a self-contained HDD-styled shell instead
+  // of inheriting the generic settings typography.
+  appendSection('settings-blocks', `.dsh-fairy-settings-block{display:grid;gap:8px;border:1px solid rgba(100,210,255,.18);border-radius:10px;padding:12px 14px;background:rgba(8,20,32,.38)}
+.dsh-fairy-settings-block h4{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
+.dsh-fairy-settings-block label{display:grid;gap:4px;font-size:12px}
+.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
+.dsh-fairy-settings-block textarea{resize:vertical;min-height:96px}
+.dsh-fairy-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dsh-fairy-actions button{border:1px solid rgba(100,210,255,.28);background:rgba(100,210,255,.10);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:inherit;font:inherit;font-size:12px}
+.dsh-fairy-actions button:hover:not(:disabled){background:rgba(100,210,255,.18)}
+.dsh-fairy-actions button:disabled{opacity:.6;cursor:default}
+.dsh-fairy-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center;border:1px dashed rgba(100,210,255,.32);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+.dsh-fairy-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.dsh-fairy-hint{font-size:11px;line-height:1.5;opacity:.72;margin:0}`);
+  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}`);
+
   el.textContent = cssSections.map(({ css }) => css).join('');
 
   (document.head || document.documentElement).appendChild(el);
@@ -7491,6 +7509,7 @@ function requireClient () {
 	const { createFairyDiagnostics } = requireClientDiagnostics();
 	const { SETTINGS_NAMESPACE, STYLE_ID, MODE_ATTR, POWER_MODE_ATTR, THEME_ATTR, POWER_TOGGLE_WIDTH, POWER_TOGGLE_HEIGHT, DEFAULT } = require$$3;
 	const IDENTITY_SETTINGS_NAMESPACE = 'fairy-identity';
+	const PERSONA_SETTINGS_NAMESPACE = 'fairy-persona';
 	const { deriveSessionActivity, syncDocumentMode } = require$$4;
 	const { createSettingsHandle } = requireScopeShim();
 	const { createSessionSource } = requireSessionSource();
@@ -8342,7 +8361,7 @@ function requireClient () {
 	      ] });
 	    }
 
-	    function Settings({ controller, identitySettings }) {
+	    function Settings({ controller, identitySettings, personaSettings }) {
 	      const state = useController(controller);
 	      // Keep a cached value for the host settings bridge. Some host versions
 	      // return a fresh snapshot wrapper on every read; passing that directly to
@@ -8370,6 +8389,10 @@ function requireClient () {
 	          mode === 'custom' ? jsx('label', { children: ['第二助手（可选）：', jsx('input', { value: identityValue.secondAssistant || '', maxLength: 40, onChange: (event) => save(identitySettings, 'secondAssistant', event.target.value) })] }) : null,
 	          mode === 'custom' ? jsx('label', { children: ['家庭成员（可选，逗号分隔）：', jsx('input', { value: Array.isArray(identityValue.household) ? identityValue.household.join('、') : '', maxLength: 240, onChange: (event) => save(identitySettings, 'household', event.target.value.split(/[、,，]/).map((value) => value.trim()).filter(Boolean).slice(0, 12)) })] }) : null,
 	          jsx('hr', {}),
+	          jsx(TtsSettings, {}),
+	          jsx('hr', {}),
+	          jsx(PersonaSettings, { personaSettings }),
+	          jsx('hr', {}),
 	          // The voice package mounts its briefing panel here (shared "Fairy
 	          // 控制台" section instead of a nav cell of its own).
 	          jsx('div', { 'data-dsh-fairy-hub-voice': 'true' }),
@@ -8377,10 +8400,206 @@ function requireClient () {
 	      });
 	    }
 
+	    const jsonFetch = async (path, options) => {
+	      const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) } });
+	      const body = await response.json().catch(() => null);
+	      if (!response.ok) throw new Error(body?.error?.message || body?.error || `HTTP ${response.status}`);
+	      return body;
+	    };
+
+	    /** 32 kHz 16-bit mono PCM straight from the local engine. */
+	    const playPcm = async (buffer) => {
+	      const samples = new Int16Array(buffer);
+	      const context = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 32000 });
+	      const audio = context.createBuffer(1, samples.length, 32000);
+	      const channel = audio.getChannelData(0);
+	      for (let i = 0; i < samples.length; i += 1) channel[i] = samples[i] / 32768;
+	      const source = context.createBufferSource();
+	      source.buffer = audio;
+	      source.connect(context.destination);
+	      source.onended = () => { context.close().catch(() => {}); };
+	      source.start();
+	    };
+
+	    function TtsSettings() {
+	      const [config, setConfig] = React.useState(null);
+	      const [state, setState] = React.useState('loading');
+	      const [note, setNote] = React.useState('');
+	      const [draft, setDraft] = React.useState({ ttsUrl: '', docsUrl: '', promptText: '' });
+	      const applyConfig = (value) => {
+	        if (!value) return;
+	        setConfig(value);
+	        setDraft({ ttsUrl: value.ttsUrl || '', docsUrl: value.docsUrl || '', promptText: value.promptText || '' });
+	      };
+	      React.useEffect(() => {
+	        let cancelled = false;
+	        jsonFetch('/fairy-voice/config')
+	          .then((body) => { if (!cancelled) { applyConfig(body?.value); setState('ready'); } })
+	          .catch((error) => { if (!cancelled) { setState('missing'); setNote(String(error.message || error)); } });
+	        return () => { cancelled = true; };
+	      }, []);
+	      const save = async () => {
+	        setState('saving');
+	        try {
+	          const body = await jsonFetch('/fairy-voice/config/update', { method: 'POST', body: JSON.stringify(draft) });
+	          applyConfig(body?.value);
+	          setState('ready');
+	          setNote('已保存');
+	        } catch (error) {
+	          setState('error');
+	          setNote(`保存失败：${error.message || error}`);
+	        }
+	      };
+	      const probe = async () => {
+	        setState('probing');
+	        try {
+	          const body = await jsonFetch('/fairy-voice/status');
+	          const available = body?.available === true;
+	          setState('ready');
+	          setNote(available ? '连接正常' : `未连接：${body?.reason || '本地服务未响应'}`);
+	        } catch (error) {
+	          setState('error');
+	          setNote(`探活失败：${error.message || error}`);
+	        }
+	      };
+	      const preview = async () => {
+	        setState('previewing');
+	        try {
+	          const response = await fetch('/fairy-voice/tts', {
+	            method: 'POST',
+	            headers: { 'Content-Type': 'application/json' },
+	            body: JSON.stringify({ text: '检测完成。主人，Fairy 在线。' }),
+	          });
+	          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+	          await playPcm(await response.arrayBuffer());
+	          setState('ready');
+	          setNote('已播放试听');
+	        } catch (error) {
+	          setState('error');
+	          setNote(`试听失败：${error.message || error}`);
+	        }
+	      };
+	      const upload = async (event) => {
+	        const file = event.target.files?.[0];
+	        if (!file) return;
+	        setState('uploading');
+	        try {
+	          const base64 = await new Promise((resolve, reject) => {
+	            const reader = new FileReader();
+	            reader.onload = () => resolve(String(reader.result || ''));
+	            reader.onerror = () => reject(reader.error || new Error('read failed'));
+	            reader.readAsDataURL(file);
+	          });
+	          const body = await jsonFetch('/fairy-voice/reference', { method: 'POST', body: JSON.stringify({ audioBase64: base64, filename: file.name, promptText: draft.promptText }) });
+	          applyConfig(body?.value);
+	          setState('ready');
+	          setNote(`已上传 ${file.name}`);
+	        } catch (error) {
+	          setState('error');
+	          setNote(`上传失败：${error.message || error}`);
+	        }
+	      };
+	      if (state === 'missing') {
+	        return jsxs('div', { className: 'dsh-fairy-settings-block', children: [jsx('h4', { children: '语音服务（TTS）' }), jsx('p', { children: '未安装 dsh-fairy-voice，语音服务不可配置。' })] });
+	      }
+	      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
+	        jsx('h4', { children: '语音服务（TTS）' }),
+	        jsx('p', { className: 'dsh-fairy-hint', children: 'GPT-SoVITS 兼容端点；默认读取 DSH_FAIRY_TTS_URL / DSH_FAIRY_DOCS_URL，这里保存的值优先。' }),
+	        jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('label', { children: ['参考音频提示文本：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
+	        jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
+	        jsxs('div', { className: 'dsh-fairy-actions', children: [
+	          jsx('button', { type: 'button', onClick: save, disabled: state === 'saving', children: state === 'saving' ? '保存中…' : '保存' }),
+	          jsx('button', { type: 'button', onClick: probe, disabled: state === 'probing', children: state === 'probing' ? '检测中…' : '测试连接' }),
+	          jsx('button', { type: 'button', onClick: preview, disabled: state === 'previewing', children: state === 'previewing' ? '合成中…' : '试听' }),
+	          jsx('label', { className: 'dsh-fairy-upload', children: ['上传参考音频', jsx('input', { type: 'file', accept: 'audio/*', onChange: upload })] }),
+	        ] }),
+	        note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
+	      ] });
+	    }
+
+	    function PersonaSettings({ personaSettings }) {
+	      const snapshot = React.useSyncExternalStore(personaSettings.subscribe, personaSettings.getSnapshot, personaSettings.getSnapshot);
+	      const stored = React.useMemo(() => snapshot?.value || {}, [snapshot]);
+	      const [text, setText] = React.useState(stored.text || '');
+	      const [enabled, setEnabled] = React.useState(stored.enabled !== false);
+	      const [corpus, setCorpus] = React.useState([]);
+	      const [picked, setPicked] = React.useState('');
+	      const [note, setNote] = React.useState('');
+	      const [info, setInfo] = React.useState(null);
+	      React.useEffect(() => {
+	        setText(stored.text || '');
+	        setEnabled(stored.enabled !== false);
+	      }, [stored.text, stored.enabled]);
+	      React.useEffect(() => {
+	        let cancelled = false;
+	        jsonFetch('/dsh-fairy/persona')
+	          .then((body) => { if (!cancelled) setInfo(body?.value || null); })
+	          .catch(() => {});
+	        jsonFetch('/dsh-fairy/persona/corpus')
+	          .then((body) => { if (!cancelled) setCorpus(Array.isArray(body?.value) ? body.value : []); })
+	          .catch(() => {});
+	        return () => { cancelled = true; };
+	      }, []);
+	      const persist = async () => {
+	        try {
+	          await personaSettings.set('text', text);
+	          await personaSettings.set('enabled', enabled);
+	          setNote('已保存，下一条消息生效');
+	          const body = await jsonFetch('/dsh-fairy/persona').catch(() => null);
+	          if (body?.value) setInfo(body.value);
+	        } catch (error) {
+	          setNote(`保存失败：${error.message || error}`);
+	        }
+	      };
+	      const insert = async (id, all = false) => {
+	        const targets = all ? corpus : corpus.filter((entry) => entry.id === id);
+	        if (!targets.length) return;
+	        let appended = '';
+	        for (const entry of targets) {
+	          try {
+	            const body = await jsonFetch(`/dsh-fairy/persona/corpus/file?id=${encodeURIComponent(entry.id)}`);
+	            appended += `\n\n【参考语料 ${entry.id}】\n${body?.value?.text || ''}`;
+	          } catch {
+	            /* skip unavailable file */
+	          }
+	        }
+	        setText((current) => `${current}${appended}`);
+	        setNote(`已插入 ${targets.length} 份语料（记得保存）`);
+	      };
+	      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
+	        jsx('h4', { children: 'Fairy 人设' }),
+	        jsx('label', { children: [jsx('input', { type: 'checkbox', checked: enabled, onChange: (event) => { setEnabled(event.target.checked); } }), ' 启用人设注入（写入系统提示词）'] }),
+	        jsx('textarea', {
+	          value: text,
+	          rows: 16,
+	          spellCheck: false,
+	          placeholder: '留空则使用内置的参考人设（绝区零 Fairy）。字数不限，可直接粘贴整份语料。',
+	          onChange: (event) => setText(event.target.value),
+	          style: { width: '100%', fontFamily: 'inherit', lineHeight: 1.5 },
+	        }),
+	        jsx('div', { className: 'dsh-fairy-hint', children: `当前 ${text.length} 字${info?.composed ? `；注入后约 ${info.composed.chars} 字（来源：${info.composed.source === 'custom' ? '自定义' : '内置'}，语料 ${info.composed.corpus?.length || 0} 份）` : ''}` }),
+	        jsxs('div', { className: 'dsh-fairy-actions', children: [
+	          jsx('button', { type: 'button', onClick: () => persist(), children: '保存人设' }),
+	          jsx('button', { type: 'button', onClick: () => { setText(info?.defaultText || ''); setNote('已载入内置参考人设（记得保存）'); }, children: '载入内置人设' }),
+	          jsx('button', { type: 'button', onClick: () => { setText(''); setNote('已清空（保存后回落内置人设）'); }, children: '清空' }),
+	        ] }),
+	        jsxs('div', { className: 'dsh-fairy-actions', children: [
+	          jsxs('select', { value: picked, onChange: (event) => setPicked(event.target.value), children: [jsx('option', { value: '', children: '选择参考语料…' }), ...corpus.map((entry) => jsx('option', { value: entry.id, children: `${entry.id}（${Math.round(entry.bytes / 1024)} KB）` }, entry.id))] }),
+	          jsx('button', { type: 'button', disabled: !picked, onClick: () => insert(picked), children: '插入选中语料' }),
+	          jsx('button', { type: 'button', disabled: !corpus.length, onClick: () => insert('', true), children: `全部插入（${corpus.length} 份）` }),
+	        ] }),
+	        jsx('p', { className: 'dsh-fairy-hint', children: '全部插入会把参考项目的完整语料写进系统提示词（约 400 KB），token 成本很高；建议按需插入。' }),
+	        note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
+	      ] });
+	    }
+
 	function apply(ctx) {
 	      return diagnostics.guard('apply', () => {
 	      const settings = createSettingsHandle(SETTINGS_NAMESPACE);
 	      const identitySettings = createSettingsHandle(IDENTITY_SETTINGS_NAMESPACE);
+	      const personaSettings = createSettingsHandle(PERSONA_SETTINGS_NAMESPACE);
 	      syncDocumentMode(settings.getSnapshot());
 	      injectStyles();
 	      const selectionGuard = createSelectionGuard({
@@ -8408,7 +8627,7 @@ function requireClient () {
 	      ctx.slots.inject('shell.overlay', () => ctx.slots.register({ name: 'shell.overlay', id: 'dsh-fairy-visual-stage', order: 10 }, () => jsx(StageHost, { controller })));
 	      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-session-metrics', order: 80 }, () => jsx(SessionMetricsControl, { controller })));
 	      ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({ name: 'conversation.session.header.utilities', id: 'dsh-fairy-visual-toggle', order: 90 }, () => jsx(Toggle, { controller })));
-	      ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'dsh-fairy-visual', order: 45, label: () => 'Fairy 控制台' }, () => jsx(Settings, { controller, identitySettings })));
+	      ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'dsh-fairy-visual', order: 45, label: () => 'Fairy 控制台' }, () => jsx(Settings, { controller, identitySettings, personaSettings })));
 	      }, { surface: 'client' });
 	    }
 

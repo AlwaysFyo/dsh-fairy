@@ -11,7 +11,7 @@
  * fully in-process (no child process, so it also works under the Windows file
  * sandbox). See docs/official-api-notes.md.
  */
-import { access, readFile, mkdir, rename, writeFile } from 'node:fs/promises'
+import { access, readdir, readFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -103,12 +103,20 @@ export async function buildClient(pkgDir) {
   await writeFile(tmp, wrapped, 'utf8')
   await rename(tmp, outfile)
 
-  // Host half: plain ESM, copied verbatim (it is already valid Node ESM).
+  // Host half: plain ESM, copied verbatim (it is already valid Node ESM). Sibling
+  // host modules (src/*.js other than the entry) are copied too, because the host
+  // entry imports them with a relative specifier that must resolve inside `lib/`.
   let hostBytes = 0
   try {
     const hostSource = await readFile(path.join(pkgDir, 'src', 'index.js'), 'utf8')
     await writeFile(path.join(outDir, 'index.js'), hostSource, 'utf8')
     hostBytes = Buffer.byteLength(hostSource, 'utf8')
+    const srcDir = path.join(pkgDir, 'src')
+    for (const dirEntry of await readdir(srcDir, { withFileTypes: true })) {
+      if (!dirEntry.isFile() || !dirEntry.name.endsWith('.js') || dirEntry.name === 'index.js') continue
+      const source = await readFile(path.join(srcDir, dirEntry.name), 'utf8')
+      await writeFile(path.join(outDir, dirEntry.name), source, 'utf8')
+    }
   } catch (error) {
     if (error.code !== 'ENOENT') throw error
   }

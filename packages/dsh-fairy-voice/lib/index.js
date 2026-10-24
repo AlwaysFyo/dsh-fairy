@@ -3,10 +3,17 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { readFileSync } from 'node:fs';
 import { chmod, mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { createLocalTtsTransport, createPcmStreamHandler } from './server/local-tts-proxy.js';
+import {
+  describeTtsConfig,
+  readTtsConfigSync,
+  referenceAudioPath,
+  referencePromptText,
+  saveReferenceAudio,
+  writeTtsConfig,
+} from './server/tts-config.js';
 import { createVoiceBriefFallback, createVoiceBrainServerBoundary } from './server/voice-brief-fallback.js';
 import { createFairyDiagnostics } from 'dsh-fairy-contracts/diagnostics';
 
@@ -19,20 +26,8 @@ const LOCAL_DOCS_URL = process.env.DSH_FAIRY_DOCS_URL || 'http://127.0.0.1:9880/
 // always reading the primary home.
 const FAIRY_DSH_HOME = process.env.DSH_HOME || join(homedir(), '.dsh');
 const REFERENCE_AUDIO_PATH = join(FAIRY_DSH_HOME, 'fairy-voice', 'runtime', 'reference', 'fairy_ref.wav');
-const REFERENCE_PROMPT_PATH = join(FAIRY_DSH_HOME, 'fairy-voice', 'runtime', 'reference', 'fairy_ref.txt');
-const REFERENCE_PROMPT_FALLBACK = '根据用户协议，我无权回复该问题。主人将在合适的时间与合适的场合获知答案。';
 const diagnostics = createFairyDiagnostics('dsh-fairy-voice');
 
-function readReferencePrompt() {
-  try {
-    return readFileSync(REFERENCE_PROMPT_PATH, 'utf8').trim();
-  } catch (error) {
-    diagnostics.warn('reference.prompt.load', { file: 'fairy_ref.txt', fallback: true }, error);
-    return REFERENCE_PROMPT_FALLBACK;
-  }
-}
-
-const REFERENCE_PROMPT = readReferencePrompt();
 const MAX_TTS_TEXT_LENGTH = 500;
 const MAX_SENTENCE_LENGTH = 40;
 const TTS_TIMEOUT_MS = 180_000;
@@ -403,12 +398,16 @@ function publicError(code) {
     'voice-brief-request-failed': 'Voice Brain 请求失败，已使用原文朗读。',
     'voice-brief-empty': 'Voice Brain 未返回可朗读内容，已使用原文朗读。',
     'voice-brief-timeout': 'Voice Brain 请求超时，已使用原文朗读。',
+    'tts-config-invalid': 'TTS 配置无效，请检查地址格式。',
+    'tts-config-failed': 'TTS 配置读写失败。',
+    'reference-audio-missing': '请选择要上传的参考音频文件。',
+    'reference-audio-too-large': '参考音频过大（上限 24 MB）。',
   };
   return { code, message: messages[code] || messages['local-service-failed'] };
 }
 
 function statusFor(code) {
-  if (['empty-text', 'text-too-large', 'invalid-json', 'voice-brief-input-too-large'].includes(code)) return 400;
+  if (['empty-text', 'text-too-large', 'invalid-json', 'voice-brief-input-too-large', 'tts-config-invalid', 'reference-audio-missing', 'reference-audio-too-large'].includes(code)) return 400;
   if (['voice-brief-unconfigured', 'voice-brief-config-invalid'].includes(code)) return 422;
   if (code === 'client-aborted') return 499;
   if (code === 'local-service-unavailable') return 503;
@@ -471,7 +470,16 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
     ttsUrl: LOCAL_TTS_URL,
     docsUrl: LOCAL_DOCS_URL,
     referenceAudioPath: REFERENCE_AUDIO_PATH,
-    referencePrompt: REFERENCE_PROMPT,
+    referencePrompt: '',
+    resolveConfig: () => {
+      const config = readTtsConfigSync();
+      return {
+        ttsUrl: config.ttsUrl,
+        docsUrl: config.docsUrl,
+        referenceAudioPath: referenceAudioPath(config),
+        referencePrompt: referencePromptText(config),
+      };
+    },
     ttsTimeoutMs: TTS_TIMEOUT_MS,
     statusTimeoutMs: STATUS_TIMEOUT_MS,
   });
@@ -494,6 +502,41 @@ export function createFairyVoiceHandlers({ fetchImpl = fetch, readConfig = readV
       for (const controller of activeControllers) controller.abort('disposed');
       activeControllers.clear();
       activeTtsController = null;
+    },
+    ttsConfig: async (_req, res) => {
+      try {
+        sendJson(res, 200, { ok: true, value: await describeTtsConfig() });
+      } catch (error) {
+        diagnostics.warn('tts.config.read', {}, error);
+        sendJson(res, 500, { error: publicError('tts-config-failed') });
+      }
+    },
+    ttsConfigUpdate: async (req, res) => {
+      try {
+        const body = await readJson(req, 20_000);
+        await writeTtsConfig(body?.value ?? body ?? {});
+        sendJson(res, 200, { ok: true, value: await describeTtsConfig() });
+      } catch (error) {
+        const code = error?.message === 'invalid-json' ? 'invalid-json' : 'tts-config-invalid';
+        diagnostics.warn('tts.config.write', { code }, error);
+        sendJson(res, statusFor(code), { error: publicError(code) });
+      }
+    },
+    ttsReference: async (req, res) => {
+      try {
+        const body = await readJson(req, 40_000_000);
+        const saved = await saveReferenceAudio({
+          audioBase64: body?.audioBase64,
+          filename: body?.filename,
+          promptText: body?.promptText,
+        });
+        diagnostics.metric('tts.reference.upload', Date.now(), { bytes: saved.bytes });
+        sendJson(res, 200, { ok: true, value: await describeTtsConfig() });
+      } catch (error) {
+        const code = error?.code || (error?.message === 'invalid-json' ? 'invalid-json' : 'reference-audio-missing');
+        diagnostics.warn('tts.reference.upload', { code }, error);
+        sendJson(res, statusFor(code), { error: publicError(code) });
+      }
     },
     status: async (_req, res) => {
       const startedAt = diagnostics.start();
@@ -618,6 +661,9 @@ export function apply(ctx) {
   ctx.inject(['webServer'], (ws) => ws.effect(() => {
     const unregisterStatus = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/status', handler: handlers.status });
     const unregisterPrepare = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/prepare', handler: handlers.prepare });
+    const unregisterTtsConfig = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/config', handler: handlers.ttsConfig });
+    const unregisterTtsConfigUpdate = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/config/update', handler: handlers.ttsConfigUpdate });
+    const unregisterTtsReference = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/reference', handler: handlers.ttsReference });
     const unregisterTts = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/tts', handler: handlers.tts });
     const unregisterBrainStatus = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/brain/status', handler: handlers.voiceBrainStatus });
     const unregisterBrainConfig = ws.webServer.register({ kind: 'exact', path: '/fairy-voice/brain/config', handler: handlers.voiceBrainConfig });
@@ -626,6 +672,9 @@ export function apply(ctx) {
       handlers.dispose();
       unregisterStatus?.();
       unregisterPrepare?.();
+      unregisterTtsConfig?.();
+      unregisterTtsConfigUpdate?.();
+      unregisterTtsReference?.();
       unregisterTts?.();
       unregisterBrainStatus?.();
       unregisterBrainConfig?.();

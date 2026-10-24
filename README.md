@@ -37,6 +37,34 @@
    `activity/lifecycle` 永远停在 `normal/idle`。`session-source.js` 做了这个转接层
    （懒解析 + 兼容 `getSnapshot()`/`.value`），并把 `uiSession` 加进 `inject`。
 
+## 配置面：HDD / 身份 / 语音 / 人设
+
+设置 →「Fairy 控制台」把四类配置收在同一页（`settings.section` 只占一个导航格）：
+
+| 区块 | 内容 | 存放位置 |
+| --- | --- | --- |
+| HDD 视觉 | 启用 HDD、日间模式、显示主视觉、低功耗 | `$DSH_HOME/fairy-visual/settings.json` |
+| 身份 | 铃 / 哲 / 自定义（自定义时另有第二助手、家庭成员） | `$DSH_HOME/fairy-identity/identity.json` |
+| 语音服务（TTS） | `ttsUrl`、`docsUrl`、参考音频提示文本、参考音频文件（≤24 MB，wav/mp3/flac/ogg/m4a）、保存 / 测试连接 / 试听 | `$DSH_HOME/fairy-voice/tts-config.json`，音频落在 `$DSH_HOME/fairy-voice/runtime/reference/` |
+| Fairy 人设 | 字数不限的人设正文（留空 = 内置参考人设），可检索并插入 11 份参考语料 | `$DSH_HOME/fairy-persona/persona.json` |
+
+三者如何进入模型：
+
+- 人设以 `fairy:persona` **section**（`order: 100`，`interpolate: false`）注入系统提示词，
+  `text` 是函数 → **每次组装都会重新求值**，保存后下一条消息即生效，不用重启。
+  `/dsh-fairy/persona/probe` 会跑一次真实组装，回报 `sectionNames`、注入长度、身份条款是否命中。
+- 身份（铃/哲/自定义 + 家庭成员）在合成时以「【本次会话身份】…」追加到人设末尾，
+  由 `src/persona.js` 的 `identityClause()` 生成，不依赖模型猜称呼。
+- 语料按需插入（单份或全部），上限 400 000 字符；全部插入约 400 KB，token 成本很高，
+  UI 里有明确提示。
+- TTS 的 `ttsUrl`/`docsUrl` 在保存后**优先于** `DSH_FAIRY_TTS_URL`/`DSH_FAIRY_DOCS_URL`，
+  环境变量只是默认值（`/fairy-voice/config` 的 `env.overridden` 会说明当前是否被界面覆盖）。
+  搬运整套配置只需拷 `$DSH_HOME/fairy-voice/`。
+
+新增的宿主路由：`GET /fairy-voice/config`、`POST /fairy-voice/config/update`、
+`POST /fairy-voice/reference`、`GET /dsh-fairy/persona`、`GET /dsh-fairy/persona/corpus`、
+`GET /dsh-fairy/persona/corpus/file?id=`、`GET /dsh-fairy/persona/probe`。
+
 ## 开发
 
 ```powershell
@@ -73,6 +101,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | `node tools/cdp/session-activity.mjs` / `session-transition.mjs` | 观察 `.dsh-hdd-session-transition` 帧与 `data-fairy-state` 变化 |
 | `node tools/cdp/i18n-motion.mjs <url>` | 切到 `en` 后重测所有语义锚点；再模拟 `prefers-reduced-motion: reduce` 验证过渡被跳过 |
 | `node tools/cdp/voice-e2e.mjs <url>` | `/fairy-voice/status` → `/tts` → 32 kHz 实际播放 → 音频控件几何 |
+| `node tools/cdp/persona-check.mjs <url>` | 13 项只读不变量：人设合成、身份条款、语料清单/读取/路径穿越、**真实组装里是否存在 `fairy:persona`**、TTS 配置与状态 |
 | `node tools/mock-tts.mjs --port=9881` | GPT-SoVITS 兼容的假 TTS，用来验证整条语音链 |
 | `node tools/parity*` 见上 | — |
 
@@ -118,6 +147,11 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 模型控件位置 | 右翼底行、发送按钮左侧 8px（`rel [1490,82,46,28]` vs `send rel [1544,82]`），与参考同一布局带 |
 | 头部控件尺寸 | 仅缩尺寸、内容原样：`统计 52→40`、`H.D.D 68→58`、`日间模式 30→26`（宽），高度 26/28 与官方按钮一致；文字与参考新月画法未动 |
 | 空白会话垂直对齐 | 兜底组与官方 corner 按钮顶端同为 **y=11、高 28**（此前偏上 2px），四档宽度一致 |
+| 人设注入（真实组装） | `/dsh-fairy/persona/probe` 返回 8 个 section，`fairy:persona` 排第 3（紧跟 `deployment:persona-prefix`），注入 2213 字；改成自定义文本后立即变为 61 字（含 44 字身份条款），无需重启 |
+| 身份条款 | `ling` → 「当前「主人」是铃」；切自定义（执笔者 / 第二助手 Fairy / 家庭成员 小铃）后合成文本多出两行，并同样进入 `fairy:persona` |
+| 参考语料 | 11 份语料清单可用、按 id 读取 200、`../package.json` 穿越请求 404；插入 `canon/fairy_canon.json` 后合成从 2213 → 15 493 字 |
+| 设置页 TTS 区块 | 真实 UI 上传参考音频：`referencePresent:true`、`referenceBytes:64044`、文件名回显；「测试连接」→「连接正常」；「试听」→ `POST /fairy-voice/tts 200`、43 520 B PCM 并提示「已播放试听」 |
+| 设置页人设区块 | textarea `maxLength = -1`（不限字数）；真实输入 17 字并点「保存人设」→ `/dsh-fairy/persona` 立刻报告 `source:custom`、`chars:61`，提示「已保存，下一条消息生效」 |
 
 ### 设置面板的打开前提
 
@@ -159,7 +193,11 @@ node tools/pin-versions.mjs
 - [x] Voice 端到端链路（mock TTS 已验证；换成真实模型只需改 `DSH_FAIRY_TTS_URL`）
 - [x] 市场安装路径（tarball 装进全新 `DSH_HOME`，五个插件全部就位）
 - [x] 中英 i18n 与 `prefers-reduced-motion` 的逐项回归
-- [x] 一眼可见的三个 UI 缺陷：眼睛大小滑条不生效、输入框选不了模型、头部控件位置/间距
+- [x] 三个 UI 缺陷：眼睛大小滑条不生效、输入框选不了模型、头部控件位置/间距
 - [x] 市场式一键停/起（禁用锚包插入的五个 id → 全部下线；恢复后重新上线）
-- [ ] 接真实 TTS（GPT-SoVITS 零改动，或 IndexTTS2 + 适配器）——见 [docs/TTS.md](docs/TTS.md)
+- [x] 语音服务配置界面（地址 / 参考音频上传 / 提示文本 / 测试连接 / 试听，落盘 + 界面优先于环境变量）
+- [x] 身份设置真正生效（合成到人设末尾，随每次组装求值）
+- [x] 人设配置项（不限字数）+ 参考项目语料全量搬入（11 份，按需插入）
+- [ ] 接真实 TTS 引擎（GPT-SoVITS 零改动，或 IndexTTS2 + 适配器）——见 [docs/TTS.md](docs/TTS.md)
 - [ ] 真正走一遍插件市场的 catalog 安装（当前用 tarball + patch 覆盖层等价验证）
+- [ ] 参考语料的「按需切片」（当前只有整份插入；参考项目由 `fairy-core.runtime` 按场景抽样）
