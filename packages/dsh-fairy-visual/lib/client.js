@@ -826,6 +826,12 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
   // reference corner-bracket accents are too much here; just tune bg/border.
   appendSection('settings-dialog', `html[data-dsh-fairy-visual] [role="dialog"].VOzbGW_panel{background:rgba(10,20,34,.92)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:12px!important;box-shadow:0 18px 60px -18px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.05)!important}html[data-dsh-fairy-visual] .VOzbGW_mask{background:rgba(2,6,12,.45)!important}`);
   appendSection('settings-dialog', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [role="dialog"].VOzbGW_panel{background:rgba(244,247,251,.95)!important;border-color:rgba(34,126,166,.25)!important}`);
+  // Selected nav cell: the stock active cell is a bright blue slab
+  // (rgb(20,53,83)) that clashes with the matte navy glass. Restyle it as a
+  // cyan hairline pill matching the HDD accent system: translucent cyan fill,
+  // 1px accent border, glow on hover for idle cells.
+  appendSection('settings-dialog', `html[data-dsh-fairy-visual] [role="dialog"] .VOzbGW_navCell.VOzbGW_active{background:rgba(100,210,255,.14)!important;border:1px solid rgba(100,210,255,.35)!important;color:var(--dsw-alias-label-primary,#e8f2fa)!important;box-shadow:0 0 0 1px rgba(100,210,255,.06),inset 0 0 12px rgba(100,210,255,.07)!important}html[data-dsh-fairy-visual] [role="dialog"] .VOzbGW_navCell:not(.VOzbGW_active):hover{background:rgba(100,210,255,.07)!important}html[data-dsh-fairy-visual] [role="dialog"] .VOzbGW_navCell{transition:background 140ms ease,border-color 140ms ease}`);
+  appendSection('settings-dialog', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [role="dialog"] .VOzbGW_navCell.VOzbGW_active{background:rgba(34,126,166,.12)!important;border-color:rgba(34,126,166,.4)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [role="dialog"] .VOzbGW_navCell:not(.VOzbGW_active):hover{background:rgba(34,126,166,.07)!important}`);
 
   // Owner feedback round 4 — match the stock header buttons, content untouched.
   // Measured stock metrics: `OMoRSG_main` is 23x28 with padding 4px 5px, font 11px,
