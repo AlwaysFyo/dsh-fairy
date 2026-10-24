@@ -228,16 +228,37 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
 
       React.useEffect(() => {
         const root = rootRef.current;
-        if (!root || typeof ResizeObserver === 'undefined') return undefined;
-        const sidebarSlot = root.closest('[data-slot="sidebar"]');
-        const rail = sidebarSlot?.parentElement;
-        if (!rail) return undefined;
-        const update = () => setCompact(rail.getBoundingClientRect().width <= 80);
+        if (!root) return undefined;
+        // The slot outlet is display:contents (0×0), so the measured element
+        // must be the native column itself. The reference collapses to a 56px
+        // grid track / 46px rail; observing only the 280px expanded content
+        // leaves the full three-row card mounted after collapse.
+        const rail = root.closest('[class*="sidebarCol"]')
+          || root.closest('[data-slot="sidebar"]')?.parentElement;
+        const frame = root.closest('[class*="frame"]');
+        if (!rail && !frame) return undefined;
+        const update = () => setCompact(
+          frame?.getAttribute('data-sidebar-collapsed') === 'true'
+          || (rail?.getBoundingClientRect().width || 280) <= 80,
+        );
         update();
-        const observer = new ResizeObserver(update);
-        observer.observe(rail);
-        return () => observer.disconnect();
-      }, []);
+        const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+        if (rail) observer?.observe(rail);
+        // The native frame publishes the semantic state immediately; width
+        // transitions can lag behind it, so do not depend on pixels alone.
+        const mutation = typeof MutationObserver === 'function' ? new MutationObserver(update) : null;
+        if (frame) mutation.observe(frame, { attributes: true, attributeFilter: ['data-sidebar-collapsed'] });
+        window.addEventListener('resize', update);
+        return () => {
+          observer?.disconnect();
+          mutation?.disconnect();
+          window.removeEventListener('resize', update);
+        };
+        // `BalanceMeter` renders null while the visual settings are being
+        // adopted (and whenever HDD is off). Depend on `visual` so the effect
+        // re-runs once rootRef is connected again; with `[]` the first passive
+        // run happens while the subtree is missing and never repeats.
+      }, [visual]);
 
       const balanceInfo = data?.balance?.is_available === false ? null : data?.balance?.balance_infos?.[0];
       const cny = balanceInfo ? balanceInfo.total_balance : null;

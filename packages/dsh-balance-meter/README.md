@@ -25,6 +25,15 @@ The browser polls only while the document is visible. Unmount, `pagehide`, and
 hidden-document transitions cancel pending requests/timers; the sidebar
 `ResizeObserver` is disconnected on cleanup.
 
+When the native frame collapses (`frame[data-sidebar-collapsed="true"]`, rail
+width `<= 80px`) the card shrinks to a `36×36` tile that renders only `¥`;
+expanding restores the three-row card. The slot outlet is `display:contents`
+(0×0), so the collapse state is measured on `[class*="sidebarCol"]` plus the
+frame attribute. The observer effect depends on the `visual` state: the
+component returns `null` until the visual settings are adopted, and on that
+first passive run `rootRef.current` is still `null` — with an empty dependency
+list the observers would never be installed.
+
 Registration is owned by the web profile through a local `link:` dependency.
 Do not place the maintainable source directly in `profiles/node_modules`.
 

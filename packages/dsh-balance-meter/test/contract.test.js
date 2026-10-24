@@ -6,19 +6,21 @@ import vm from 'node:vm';
 const server = await readFile(new URL('../lib/index.js', import.meta.url), 'utf8');
 const client = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-const canonicalClientDiagnostics = await readFile(new URL('../../../fairy-contracts/client-diagnostics.cjs', import.meta.url), 'utf8');
+const canonicalClientDiagnostics = await readFile(new URL('../../dsh-fairy-contracts/client-diagnostics.cjs', import.meta.url), 'utf8');
 
 function embeddedClientDiagnostics(value) {
+  // The checkout may be CRLF (Windows autocrlf); markers are written with LF.
+  const normalized = value.replace(/\r\n/g, '\n');
   const begin = '// DSH_FAIRY_CLIENT_DIAGNOSTICS_BEGIN\n';
   const end = '// DSH_FAIRY_CLIENT_DIAGNOSTICS_END';
-  const start = value.indexOf(begin);
-  const finish = value.indexOf(end, start + begin.length);
+  const start = normalized.indexOf(begin);
+  const finish = normalized.indexOf(end, start + begin.length);
   assert.ok(start >= 0 && finish > start, 'embedded client diagnostics boundaries should exist');
-  return value.slice(start + begin.length, finish);
+  return normalized.slice(start + begin.length, finish);
 }
 
 test('embeds the canonical client diagnostics byte for byte', () => {
-  assert.equal(embeddedClientDiagnostics(client), canonicalClientDiagnostics);
+  assert.equal(embeddedClientDiagnostics(client), canonicalClientDiagnostics.replace(/\r\n/g, '\n'));
 });
 
 test('is a profile-linked client module with a server-only credential boundary', () => {
@@ -73,12 +75,28 @@ test('owns request, polling, observer, and persistence cleanup', () => {
 
 test('keeps the native label in normal mode and uses Fairy power only in HDD mode', () => {
   assert.match(client, /const readHddMode = \(\) => document\.documentElement\.getAttribute\('data-dsh-fairy-mode'\) === 'hdd'/);
-  assert.match(client, /const \[hddMode, setHddMode\] = React\.useState\(readHddMode\)/);
-  assert.match(client, /const dailyLabel = hddMode \? '今日电量' : '今日token'/);
-  assert.match(client, /const dailySummaryLabel = hddMode \? '今日电量' : '今日 token'/);
+  assert.match(client, /const dailyLabel = document\.documentElement\.getAttribute\('data-dsh-fairy-mode'\) === 'hdd' \? '今日电量' : '今日token'/);
+  assert.match(client, /const dailySummaryLabel = dailyLabel === '今日电量' \? '今日电量' : '今日 token'/);
   assert.match(client, /new MutationObserver\(syncMode\)/);
-  assert.match(client, /attributeFilter: \['data-dsh-fairy-mode'\]/);
+  assert.match(client, /attributeFilter: \['data-dsh-fairy-visual', 'data-dsh-fairy-mode'\]/);
   assert.match(client, /observer\.disconnect\(\)/);
+});
+
+test('collapses to a 36x36 rail card when the native sidebar is collapsed', () => {
+  // The collapse signal is the native frame attribute plus the measured rail
+  // width; the slot outlet itself is display:contents (0×0) and cannot be used.
+  assert.match(client, /const rail = root\.closest\('\[class\*="sidebarCol"\]'\)/);
+  assert.match(client, /const frame = root\.closest\('\[class\*="frame"\]'\)/);
+  assert.match(client, /frame\?\.getAttribute\('data-sidebar-collapsed'\) === 'true'/);
+  assert.match(client, /new ResizeObserver\(update\)/);
+  assert.match(client, /attributeFilter: \['data-sidebar-collapsed'\]/);
+  // The observer effect must re-run after the component becomes visible again:
+  // on the first passive run the subtree is absent (`!visual` → null) and
+  // rootRef.current is null, so a `[]` dependency list never installs it.
+  assert.match(client, /window\.removeEventListener\('resize', update\);\s*\};/);
+  assert.match(client, /\}, \[visual\]\);/);
+  assert.match(client, /width: compact \? '36px' : undefined/);
+  assert.match(client, /children: '¥'/);
 });
 
 test('keeps balance credentials server-only and renders remote failures as unavailable', () => {
@@ -110,9 +128,9 @@ test('uses the official V4 Flash UTC peak/off-peak schedule and rates', async ()
 });
 
 test('suspends and resumes one visible-page balance request without retaining listeners', () => {
-  const match = client.match(/function createBalancePoller\(setData, sessions\) \{[\s\S]*?\n    \}\n\n    function BalanceMeter/);
+  const match = client.match(/function createBalancePoller\(setData, sessions\) \{[\s\S]*?\r?\n    \}\r?\n\r?\n    function BalanceMeter/);
   assert.ok(match, 'balance poller source is available');
-  const pollerSource = match[0].replace(/\n\n    function BalanceMeter$/, '');
+  const pollerSource = match[0].replace(/\r?\n\r?\n    function BalanceMeter$/, '');
   const documentListeners = new Map();
   const windowListeners = new Map();
   const timers = [];
@@ -159,9 +177,9 @@ test('suspends and resumes one visible-page balance request without retaining li
 });
 
 test('uses a 30s active interval and a 120s idle interval without eager state-change requests', async () => {
-  const match = client.match(/function createBalancePoller\(setData, sessions\) \{[\s\S]*?\n    \}\n\n    function BalanceMeter/);
+  const match = client.match(/function createBalancePoller\(setData, sessions\) \{[\s\S]*?\r?\n    \}\r?\n\r?\n    function BalanceMeter/);
   assert.ok(match, 'adaptive balance poller source is available');
-  const pollerSource = match[0].replace(/\n\n    function BalanceMeter$/, '');
+  const pollerSource = match[0].replace(/\r?\n\r?\n    function BalanceMeter$/, '');
   const timers = [];
   let running = false;
   let sessionListener = null;

@@ -154,6 +154,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 市场式一键停/起 | 把锚包 patch 插入的五个 id 全部 `disabled: true` 后重启：roster 里不再有 `dsh-fairy-visual`，`/dsh-fairy/diag` 返回 **404**，日志无 fairy 相关 warning；去掉该层再启动即恢复（roster 命中、`diag.ok=true`） |
 | 眼睛大小 / 动画速度滑条 | 真实拖拽后落盘（`mascotScale 0.73`），`#dsh-fairy-root` 上 `--dsh-fairy-mascot-scale: 0.76`、`data-dsh-fairy-animation-rate=1.5` |
 | 选择模型 | 点击 → 「模型与推理等级」菜单 → 「模型」行 → 12 个 `menuitemradio`（两个 provider 组）→ 选中后按钮 `aria-label` 变为所选项 |
+| 余额卡随侧栏收放 | 展开 `[14,1078,242,62]` 三行；收起后原生 rail 56px、卡片变 `[5,1104,36,36]` 只显示 `¥`（不再左溢 30px）；再展开回到 `[14,1078,242,62]`。收起信号取原生 `frame[data-sidebar-collapsed]` + 实测列宽（slot 出口是 `display:contents`，量不到） |
 | 会话头部顺序与间距 | 2040/1680/1440/1280 四档一致：`统计 → H.D.D → 日间模式 → 用文件资源管理器打开 → 更多操作 → 打开右侧边栏`，间距 `8 | 8 | 0 | 8`（0 是官方两枚图标按钮的自身间距） |
 | 空白会话（hero）兜底开关 | 与官方 `打开右侧边栏` 按钮 **overlap 0**（2040/1440/1280），兜底组停在 corner 按钮左侧 8px |
 | 模型控件位置 | 右翼底行、发送按钮左侧 8px（`rel [1490,82,46,28]` vs `send rel [1544,82]`），与参考同一布局带 |
