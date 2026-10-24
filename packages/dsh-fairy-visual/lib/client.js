@@ -814,10 +814,18 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 
   // One continuous background. The reference keeps every column (sidebars,
   // conversation, composer) transparent over the single body FX host; 0.2.1
-  // adds two opaque surfaces that cut the glow into blocks — the conversation
-  // surface (handled above) and the right empty-tab host painted at
-  // rgb(7,16,28). Make both transparent so the glow reads as one piece.
+  // adds opaque surfaces that cut the glow into blocks — the conversation
+  // surface, the right empty-tab host, the composer scroll box, and the right
+  // sidebar tab host. Make all of them transparent so the glow reads as one
+  // piece.
   appendSection('composer', `html[data-dsh-fairy-visual] [class*="emptyTabHost"]{background:transparent!important;background-color:transparent!important}`);
+  appendSection('composer', `html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"],html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [class*="tabHost"][class*="rightbar"],html[data-dsh-fairy-visual] .pI_x6G_rightbarCol [class*="tabHost"]{background:transparent!important;background-color:transparent!important}`);
+  // Settings dialog: the stock panel is an opaque blue slab (rgb(14,36,61))
+  // that clashes with the HDD matte. Keep its readability but blend it with
+  // the Fairy materials: translucent navy glass + a faint dot texture + the
+  // reference corner-bracket accents are too much here; just tune bg/border.
+  appendSection('settings-dialog', `html[data-dsh-fairy-visual] [role="dialog"].VOzbGW_panel{background:rgba(10,20,34,.92)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:12px!important;box-shadow:0 18px 60px -18px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.05)!important}html[data-dsh-fairy-visual] .VOzbGW_mask{background:rgba(2,6,12,.45)!important}`);
+  appendSection('settings-dialog', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [role="dialog"].VOzbGW_panel{background:rgba(244,247,251,.95)!important;border-color:rgba(34,126,166,.25)!important}`);
 
   // Owner feedback round 4 — match the stock header buttons, content untouched.
   // Measured stock metrics: `OMoRSG_main` is 23x28 with padding 4px 5px, font 11px,
