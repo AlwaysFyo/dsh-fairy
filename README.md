@@ -168,7 +168,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | TTS 双协议 | 协议下拉切 `yovoice` 后出现模型/音色字段、「读取引擎模型/音色」从 mock 拉到 `mock-index-tts2` + `mock-voice-001`；「试听」返回 `audio/wav`（38444 B），浏览器 `decodeAudioData` 解码 43 564 B 后 `createBufferSource` 播放并提示「已播放试听」；切回 `gpt-sovits` 后上传控件恢复、模型字段消失；13 项不变量由 `tools/cdp/yovoice-check.mjs` 全绿 |
 | 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
 | 右侧边栏蒙板 | 三态由 `data-dsh-fairy-right-sidebar`（ResizeObserver 实测列宽 / 面板宽）区分：**停靠**才上蒙板（面板底色 `rgba(4,12,22,.58)` / 浅色 `rgba(255,255,255,.62)`），**收起**保持透明；实测停靠 `[1122,0,918,1200]`、全屏 `[0,0,2040,1200]`、收起时面板 box 仍停在 918 宽（stock 不复位）但不绘制；两种主题 `lowContrast: []`、`layout-audit` ok |
-| 全屏右侧边栏背景 | **全屏**时面板改画 HDD 画布（底色 `rgb(7,16,28)` / 浅色 `rgb(247,250,252)` + 与 `.dsh-hdd-fx` 同参数的 48px 网格 `1.5px / 48px 48px`）；实测面板内 96×96 窗口行均值起伏 4.97–5.56、lag-48 自相关 0.47–0.50（网格周期性成立），面板中心命中元素是侧栏自身按钮而非 `wSkVaW_scrollBody`（对话不再透出） |
+| 全屏右侧边栏背景 | **全屏**时面板是**自己的不透明承载面**（官方在全屏会把面板画成整窗不透明，HDD 关时实测 `255,255,255` 铺满）：深色 `rgb(10,24,40)`（`--dsw-alias-bg-layer-1`）、浅色 `rgb(255,255,255)`，各带 1px 描边 + 48px 网格（深 `rgba(100,210,255,.03)` / 浅 `rgba(34,126,166,.05)`）；实测面板内 96×96 窗口行均值起伏 7.44、lag-48 自相关 0.50（网格周期性成立），面板中心命中侧栏自身内容而非 `wSkVaW_scrollBody`（对话不再透出） |
 
 ### 设置面板的打开前提
 
