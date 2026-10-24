@@ -323,9 +323,9 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // reference's 1px bordered 999px pill, which is what read as "too big". Flatten
   // the group and size each control like the stock ghost buttons; the labels, the
   // dot and the reference day/night crescent are unchanged.
-  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important;gap:2px!important;border:0!important;border-radius:8px!important;background:transparent!important}
-.dsh-fairy-toggle{height:28px!important;padding:0 5px!important;gap:5px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important}
-.dsh-fairy-theme-toggle{width:28px!important;height:28px!important;border-radius:8px!important}
+  appendSection('header-controls', `.dsh-fairy-toggle-group{height:28px!important;gap:4px!important;border:0!important;border-radius:8px!important;background:transparent!important}
+.dsh-fairy-toggle{height:28px!important;padding:0 6px!important;gap:5px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important;border:1px solid var(--dsw-alias-border-l2)!important}
+.dsh-fairy-theme-toggle{width:28px!important;height:28px!important;border-radius:8px!important;border:1px solid var(--dsw-alias-border-l2)!important}
 .dsh-fairy-session-metrics-button{height:28px!important;padding:0 6px!important;font-size:11px!important;line-height:16px!important;border-radius:8px!important}
 .dsh-fairy-toggle:hover,.dsh-fairy-theme-toggle:hover:not(:disabled),.dsh-fairy-session-metrics-button:hover,.dsh-fairy-session-metrics-button[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover)!important}`);
 
