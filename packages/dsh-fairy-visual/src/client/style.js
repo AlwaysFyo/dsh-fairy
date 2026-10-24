@@ -275,6 +275,20 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // Translate the complete SVG, including its masks, as one reflection below
   // the subtitle rail; its inner layer geometry remains untouched.
   appendSection('hero', `.dsh-fairy-hero-host{width:100vw}.dsh-fairy-hero-projection-svg{top:-2px;transform:translateX(2px)}.dsh-fairy-hero-sub{transform:translateY(-8px)}.dsh-fairy-hero-sub::before,.dsh-fairy-hero-sub::after{width:240px}@media(max-width:520px){.dsh-fairy-hero-projection-svg{top:1px}.dsh-fairy-hero-sub{transform:translateX(2px)}.dsh-fairy-hero-sub::before,.dsh-fairy-hero-sub::after{width:170px}}`);
+
+  // 0.2.1 moved the model picker (x 1702..1748, y 90..118 inside the card) and
+  // the send control into the composer right wing, exactly where the 0.1.1 rail
+  // geometry placed the mascot sliders. Keep the rails but park them in the free
+  // left column, so an invisible range input can never swallow a native click.
+  appendSection('composer', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-mascot-scale-base="true"],html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-mascot-animation-speed-base="true"]{left:12px!important;right:auto!important;width:152px!important;height:28px!important}html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-mascot-scale-base="true"]{top:12px!important;bottom:auto!important}html[data-dsh-fairy-visual] [data-dsh-fairy-composer-dock="true"] [data-dsh-fairy-mascot-animation-speed-base="true"]{top:44px!important;bottom:auto!important}`);
+  // The report "the H.D.D control shows left of the stock buttons" is a flex
+  // order question, not a position bug: the utilities outlet is display:contents,
+  // so its children are flex items of the session header row, and 0.2.1 lays the
+  // corner slot (open right sidebar) out after them at some widths. Pin both of
+  // our controls to the tail of that row so a theme control can never precede a
+  // stock control; the metrics button keeps its relative order ahead of the
+  // toggle group, as in the reference.
+  appendSection('header-order', `html[data-dsh-fairy-visual] [data-slot="conversation.session.header.utilities"] > .dsh-fairy-session-metrics{order:98!important}html[data-dsh-fairy-visual] [data-slot="conversation.session.header.utilities"] > .dsh-fairy-toggle-group{order:99!important}`);
   el.textContent = cssSections.map(({ css }) => css).join('');
 
   (document.head || document.documentElement).appendChild(el);

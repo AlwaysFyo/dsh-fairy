@@ -20,6 +20,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   enabled: false,
   theme: 'dark',
   mascotVisible: true,
+  mascotScale: 1,
+  mascotAnimationSpeed: 1,
   powerMode: 'normal',
   composerDockHeight: 132,
   accent: 'fairy-blue',
@@ -28,6 +30,17 @@ const DEFAULT_SETTINGS = Object.freeze({
 })
 
 const KNOWN_KEYS = new Set(Object.keys(DEFAULT_SETTINGS))
+
+/* Mirrors `client/settings-normalizer.cjs` so the authoritative copy on disk can
+ * never disagree with what the browser accepted optimistically. */
+const SPEED_STOPS = Object.freeze([0.7, 1, 1.5])
+const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value))
+const finiteNumber = (value) => {
+  if (value === '' || value == null) return NaN
+  const number = Number(value)
+  return Number.isFinite(number) ? number : NaN
+}
+const nearestStop = (value) => SPEED_STOPS.reduce((best, item) => (Math.abs(item - value) < Math.abs(best - value) ? item : best), SPEED_STOPS[0])
 
 /** Browser-side probe reports, newest last. In memory only, capped. */
 const clientReports = []
@@ -82,6 +95,16 @@ const normalize = (raw) => {
   const next = { ...DEFAULT_SETTINGS }
   for (const key of KNOWN_KEYS) if (key in raw) next[key] = raw[key]
   next.version = SCHEMA_VERSION
+  next.enabled = next.enabled === true
+  next.theme = next.theme === 'light' ? 'light' : 'dark'
+  next.mascotVisible = next.mascotVisible !== false
+  next.powerMode = next.powerMode === 'low-power' ? 'low-power' : 'normal'
+  const scale = finiteNumber(next.mascotScale)
+  next.mascotScale = Number.isFinite(scale) ? clampNumber(scale, 0.55, 1) : 1
+  const speed = finiteNumber(next.mascotAnimationSpeed)
+  next.mascotAnimationSpeed = Number.isFinite(speed) ? nearestStop(speed) : 1
+  const dockHeight = finiteNumber(next.composerDockHeight)
+  next.composerDockHeight = Number.isFinite(dockHeight) ? Math.round(clampNumber(dockHeight, 132, 420)) : 132
   return next
 }
 
