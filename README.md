@@ -120,6 +120,24 @@ node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
 原生 `container-type:inline-size` 会量到 0 宽而退化成纯图标），以及把推理等级与
 刻度提到 WCAG 4.5:1 以上。
 
+## 远程仓库与镜像
+
+- 主仓库（CNB，私有）：<https://cnb.cool/one-mugen/dsh-fairy>
+- 镜像（GitHub，私有、只读）：<https://github.com/AlwaysFyo/dsh-fairy>
+
+日常开发只推 CNB。`master` 上的每次 push 都会触发 `.cnb.yml` 里的
+`mirror-to-github` 流水线，用 `tencentcom/git-sync` 强制镜像到 GitHub：
+
+```powershell
+git push origin master           # origin = CNB
+```
+
+镜像凭据（`GITHUB_USERNAME` / `GITHUB_TOKEN`）不写进仓库，由密钥仓库
+`one-mugen/secrets` 的 `secrets.yml` 通过 `imports` 注入；`GITHUB_TOKEN`
+需要 fine-grained token 的 Repository access 包含 `AlwaysFyo/dsh-fairy`、
+Contents 为 Read and write。流水线第一步会先用 GitHub API 预检凭据，
+凭据不可达时直接失败并给出具体原因，避免 `git-sync` 抛出难懂的认证错误。
+
 ## 验收工具（`tools/cdp/`）
 
 浏览器不可用时靠宿主信标；有 Chromium 时用真实 CDP 做数值断言（本机
