@@ -425,16 +425,24 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
 .dsh-fairy-voice-volume::-moz-range-thumb{width:9px;height:9px;border:2px solid var(--dsw-alias-bg-layer-1);border-radius:50%;background:var(--dsw-alias-label-secondary);box-shadow:0 0 0 1px var(--dsw-alias-border-l2)}
 .dsh-fairy-voice-waveform{display:none;align-items:center;justify-content:space-between;gap:3px;flex:1;height:100%;padding:0 4px;pointer-events:none}
 .dsh-fairy-voice-wave-bar{display:block;width:3px;min-width:3px;height:var(--dsh-fairy-wave-height);border-radius:999px;background:currentColor;opacity:var(--dsh-fairy-wave-opacity)}
-.dsh-fairy-voice-brain{display:grid;gap:16px;width:min(640px,100%);padding:4px 0 12px;color:var(--dsw-alias-label-primary)}
-.dsh-fairy-voice-brain-head{display:grid;gap:5px;padding-bottom:14px;border-bottom:1px solid var(--dsw-alias-border-l2)}
-.dsh-fairy-voice-brain-title{margin:0;font-size:18px;font-weight:600;line-height:1.3}
-.dsh-fairy-voice-brain-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}
-.dsh-fairy-voice-brain-panel{display:grid;gap:12px;padding:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
-.dsh-fairy-voice-brain-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.dsh-fairy-voice-brain-label{font-size:14px;font-weight:600}.dsh-fairy-voice-brain-value{font-size:13px;color:var(--dsw-alias-label-secondary);text-align:right}
-.dsh-fairy-voice-brain-input{width:100%;height:34px;padding:0 10px;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-0);color:var(--dsw-alias-label-primary);font:13px ui-monospace,SFMono-Regular,Menlo,monospace;outline:none}
-.dsh-fairy-voice-brain-input:focus{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--dsw-alias-brand-primary) 18%,transparent)}
-.dsh-fairy-voice-brain-actions{display:flex;justify-content:flex-end;gap:8px}.dsh-fairy-voice-brain-button{height:30px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px;cursor:pointer}.dsh-fairy-voice-brain-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.dsh-fairy-voice-brain-button--primary{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-brand-primary);color:#fff}.dsh-fairy-voice-brain-button:disabled{opacity:.5;cursor:not-allowed}.dsh-fairy-voice-brain-status{min-height:18px;margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.5}.dsh-fairy-voice-brain-status[data-error="true"]{color:var(--dsw-alias-state-error-primary)}
+.dsh-fairy-voice-brain{display:grid;gap:0;width:100%;color:inherit;border:1px solid rgba(100,210,255,.16);border-radius:12px;background:rgba(8,20,32,.42);overflow:hidden}
+.dsh-fairy-voice-brain-head{display:grid;gap:5px;padding:10px 13px;border-bottom:1px solid rgba(100,210,255,.12);background:rgba(100,210,255,.05)}
+.dsh-fairy-voice-brain-title{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;font-weight:600;line-height:1.3;letter-spacing:.03em}
+.dsh-fairy-voice-brain-title::before{content:"";width:5px;height:5px;border-radius:50%;background:#61d7ff;box-shadow:0 0 6px rgba(97,215,255,.85);flex:0 0 auto}
+.dsh-fairy-voice-brain-copy{margin:0;color:inherit;opacity:.62;font-size:11px;line-height:1.5}
+.dsh-fairy-voice-brain-panel{display:grid;gap:10px;padding:12px 13px;border:0;border-radius:0;background:none}
+.dsh-fairy-voice-brain-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.dsh-fairy-voice-brain-label{font-size:11px;font-weight:400;opacity:.7}.dsh-fairy-voice-brain-value{font-size:12px;opacity:.85;text-align:right}
+.dsh-fairy-voice-brain-input{width:100%;height:30px;padding:0 8px;box-sizing:border-box;border:1px solid rgba(100,210,255,.22);border-radius:8px;background:rgba(4,12,20,.5);color:inherit;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;outline:none}
+.dsh-fairy-voice-brain-input:focus{border-color:rgba(97,215,255,.55);box-shadow:0 0 0 2px rgba(97,215,255,.16)}
+.dsh-fairy-voice-brain-actions{display:flex;justify-content:flex-end;gap:8px}.dsh-fairy-voice-brain-button{height:26px;padding:0 10px;border:1px solid rgba(100,210,255,.28);border-radius:8px;background:rgba(100,210,255,.10);color:inherit;font-size:12px;cursor:pointer}.dsh-fairy-voice-brain-button:hover:not(:disabled){background:rgba(100,210,255,.18)}.dsh-fairy-voice-brain-button--primary{border-color:rgba(97,215,255,.55);background:rgba(97,215,255,.22)}.dsh-fairy-voice-brain-button:disabled{opacity:.5;cursor:not-allowed}.dsh-fairy-voice-brain-status{min-height:16px;margin:0;opacity:.62;font-size:11px;line-height:1.5}.dsh-fairy-voice-brain-status[data-error="true"]{color:#ff9aa2;opacity:1}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain{background:rgba(255,255,255,.72);border-color:rgba(34,126,166,.22)}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-head{background:rgba(34,126,166,.06);border-bottom-color:rgba(34,126,166,.16)}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-title::before{background:#227ea6;box-shadow:none}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-input{background:rgba(255,255,255,.88);border-color:rgba(34,126,166,.28)}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-button--primary{border-color:rgba(34,126,166,.55);background:rgba(34,126,166,.18)}
+html[data-dsh-fairy-theme="light"] .dsh-fairy-voice-brain-status[data-error="true"]{color:#b3261e}
 `;
       (document.head || document.documentElement).appendChild(style);
     }
@@ -1535,19 +1543,44 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
         let disposed = false;
         let observer = null;
         let root = null;
+        let mountedContainer = null;
+        let frame = 0;
+        const unmount = () => {
+          try { root?.unmount?.(); } catch { /* the node may already be gone */ }
+          root = null;
+          mountedContainer = null;
+        };
+        // Mounting on *every* DOM mutation used to create a brand new React root
+        // each time: the panel restarted on its own renders, which re-issued the
+        // brain/status request forever and left the status line stuck on
+        // “正在读取配置…”. Only mount when the mount point is actually new.
         const mount = () => {
           if (disposed) return;
           const container = document.querySelector('[data-dsh-fairy-hub-voice="true"]');
-          if (!container) return;
+          if (!container) {
+            if (mountedContainer && !mountedContainer.isConnected) unmount();
+            return;
+          }
+          if (container === mountedContainer && container.childElementCount > 0) return;
+          if (root) unmount();
+          mountedContainer = container;
           try {
             const client = require('react-dom/client');
             root = client.createRoot(container);
             root.render(jsx.jsx(VoiceBrainSection, {}));
           } catch (mountError) {
+            mountedContainer = null;
             console.warn('[dsh-fairy-voice] hub mount failed', mountError);
           }
         };
-        const scheduleMount = () => { if (!disposed) setTimeout(mount, 0); };
+        const scheduleMount = () => {
+          if (disposed || frame) return;
+          if (typeof requestAnimationFrame === 'function') {
+            frame = requestAnimationFrame(() => { frame = 0; mount(); });
+          } else {
+            frame = setTimeout(() => { frame = 0; mount(); }, 16);
+          }
+        };
         if (typeof MutationObserver === 'function') {
           observer = new MutationObserver(scheduleMount);
           observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -1556,8 +1589,12 @@ module.exports = { FAIRY_LOG_PREFIX, createFairyDiagnostics };
         return () => {
           disposed = true;
           observer?.disconnect();
-          root?.unmount?.();
-          root = null;
+          if (frame) {
+            if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame);
+            else clearTimeout(frame);
+            frame = 0;
+          }
+          unmount();
         };
       }, 'dsh-fairy-voice hub mount');
       }, { surface: 'client' });

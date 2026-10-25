@@ -48,6 +48,10 @@
 | 语音服务（TTS） | 协议（`gpt-sovits` / `yovoice`）、`ttsUrl`、`docsUrl`、API Key（可选，Bearer）、参考音频提示文本、参考音频文件（≤24 MB，wav/mp3/flac/ogg/m4a）、yovoice 的模型与音色 id、保存 / 测试连接 / 试听 / 读取引擎模型音色 / 清除 API Key | `$DSH_HOME/fairy-voice/tts-config.json`，音频落在 `$DSH_HOME/fairy-voice/runtime/reference/` |
 | Fairy 人设 | 字数不限的人设正文（留空 = 内置参考人设），可检索并插入 11 份参考语料 | `$DSH_HOME/fairy-persona/persona.json` |
 
+页面本身是一张张卡片（HDD 视觉 / 身份与称呼 / 语音服务 / 语音简报 / 人设），每行「标题 + 说明 + 开关」，
+一次性配置（端点、鉴权、参考语料）收在可展开的 `连接与鉴权` / `参考语料` 折叠条里——
+设置面板只有约 560px 宽，全展开会把页面撑到三屏，折叠后一屏能看到五张卡片的标题。
+
 三者如何进入模型：
 
 - 人设以 `fairy:persona` **section**（`order: 100`，`interpolate: false`）注入系统提示词，
@@ -197,6 +201,8 @@ node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
 | 右侧边栏原始承载面 | 按用户要求（m06540）撤回右栏蒙板、全屏网格/底色和三态 `ResizeObserver`：参考项目基于 0.1.1、没有 0.2.1 的右栏全屏，不能据此自绘；恢复原生 `_tabHost` 的 `background:var(--dsw-alias-bg-base)`，仅保留右栏 1px 分界线。停靠面板 `[1122,0,918,1200]`，全屏 `[0,0,2040,1200]`；全屏实测深色 `rgb(7,16,28)`、浅色 `rgb(247,250,252)`，均为纯色、无网格，底层对话不再透出 |
 | 模型与推理强度弹窗 | 座位是 `@ayanehana/dsh-reasoning-effort` 的 fallback 组件：`.re-model-trigger` 220×28 @ `[1569,1154]`、文字 `DeepSeek-V4-Pro Max`；弹层 `aria-label="模型与推理强度"`（312 宽），有档位模型显示 `.re-advanced` + `.re-effort-input[max=3]`，无档位模型显示「当前模型未提供推理强度档位」；真实拖拽 `High → Off → Max`，trigger 的 `aria-label` 同步；深色刻度 4.95 / 选中 9.44 / 名称 7.87，浅色 5.87 / 5.82，全部 ≥ 4.5（`tools/cdp/reasoning-check.mjs`） |
 | 推理滑条滑块 | 默认是参考站的白色圆钮（30×30、`border-radius:50%`、紫色辉光），插件自带的「大肥鱼」贴图改为 opt-in：勾选「推理滑条用大肥鱼贴图」后 `.re-effort-knob` 变成 `data:image/png` 贴图、40×55，取消勾选立刻回到圆钮；属性由 `data-dsh-fairy-chibi-thumb` 门控，`utils.js` 的 `MutationObserver` 负责插件后渲染的滑块。8 项不变量见 `.dsh-dev-home/chibi-thumb-check.mjs` |
+| Fairy 控制台布局 | 五张卡片（HDD 视觉 / 身份与称呼 / 语音服务 / 语音简报 / 人设）在 564px 宽的面板里单列排布，内容总高 **1395px**（旧版裸 checkbox + `<hr>` 拼凑为 1877px）；折叠条展开后 1699px；卡片 12px 圆角、12px 标题 + 5px 发光圆点，开关是 34×20 的自绘 `input[type=checkbox]`（行为与 a11y 不变），两套主题 `lowContrast: 0`（`.dsh-dev-home/hub-audit.mjs`） |
+| 语音简报挂载 | 语音简报面板由 voice 包 `createRoot` 挂进 Hub 的宿主节点：现在只在宿主是**新节点**时挂载（此前每次 DOM 变更都新建 React root，导致 `GET /fairy-voice/brain/status` 无限重发、状态行永远停在「正在读取配置…」），实测一次请求即显示「未配置。未配置时，长回答会直接使用原文朗读。」 |
 
 ### 设置面板的打开前提
 

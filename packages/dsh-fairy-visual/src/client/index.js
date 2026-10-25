@@ -855,6 +855,81 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
       ] });
     }
 
+    /** One line of the Fairy console: title + hint on the left, switch on the right. */
+    function SwitchRow({ title, hint, titleAttr, checked, onChange }) {
+      return jsxs('label', {
+        className: 'dsh-fairy-row',
+        title: titleAttr,
+        children: [
+          jsxs('span', {
+            className: 'dsh-fairy-row-text',
+            children: [
+              jsx('span', { className: 'dsh-fairy-row-title', children: title }),
+              hint ? jsx('span', { className: 'dsh-fairy-row-hint', children: hint }) : null,
+            ],
+          }),
+          jsx('input', { type: 'checkbox', className: 'dsh-fairy-switch', checked, onChange }),
+        ],
+      });
+    }
+
+    /** Card shell: a titled group with hairline-separated rows inside. */
+    function Card({ title, hint, wide, children }) {
+      return jsxs('section', {
+        className: wide ? 'dsh-fairy-card dsh-fairy-card--wide' : 'dsh-fairy-card',
+        children: [
+          jsxs('header', {
+            className: 'dsh-fairy-card-head',
+            children: [
+              jsx('h3', { className: 'dsh-fairy-card-title', children: title }),
+              hint ? jsx('span', { className: 'dsh-fairy-card-hint', children: hint }) : null,
+            ],
+          }),
+          children,
+        ],
+      });
+    }
+
+    /** A labelled form control (label above, control below, optional hint). */
+    function Field({ label, hint, children }) {
+      return jsxs('label', {
+        className: 'dsh-fairy-field',
+        children: [
+          jsx('span', { className: 'dsh-fairy-field-label', children: label }),
+          children,
+          hint ? jsx('span', { className: 'dsh-fairy-field-hint', children: hint }) : null,
+        ],
+      });
+    }
+
+    /** Host:port of a configured endpoint, for the collapsed card hints. */
+    function safeHost(url) {
+      try { return new URL(String(url)).host; } catch { return ''; }
+    }
+
+    /**
+     * Disclosure for the parts of a card that are configured once and then
+     * forgotten (endpoints, keys, the reference corpus). The settings panel is
+     * only ~560px wide, so keeping these collapsed is what makes the page
+     * readable at a glance.
+     */
+    function Details({ title, hint, open, children }) {
+      return jsxs('details', {
+        className: 'dsh-fairy-details',
+        open: open === true,
+        children: [
+          jsxs('summary', {
+            className: 'dsh-fairy-details-summary',
+            children: [
+              jsx('span', { className: 'dsh-fairy-details-title', children: title }),
+              hint ? jsx('span', { className: 'dsh-fairy-details-hint', children: hint }) : null,
+            ],
+          }),
+          jsx('div', { className: 'dsh-fairy-rows dsh-fairy-rows--padded', children }),
+        ],
+      });
+    }
+
     function Settings({ controller, identitySettings, personaSettings }) {
       const state = useController(controller);
       // Keep a cached value for the host settings bridge. Some host versions
@@ -870,27 +945,98 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
         return identitySettings.subscribe(refresh);
       }, [identitySettings]);
       const mode = identityValue.mode || 'ling';
+      const household = Array.isArray(identityValue.household) ? identityValue.household.join('、') : '';
       return jsxs('div', {
-        style: { display: 'grid', gap: 12, padding: 16 },
+        className: 'dsh-fairy-hub',
         children: [
-          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.enabled, onChange: (event) => save(controller, 'enabled', event.target.checked) }), ' 启用 HDD 视觉'] }),
-          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.theme === 'light', onChange: (event) => save(controller, 'theme', event.target.checked ? 'light' : 'dark') }), ' HDD 日间模式'] }),
-          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.mascotVisible, onChange: (event) => save(controller, 'mascotVisible', event.target.checked) }), ' 显示 Fairy 主视觉'] }),
-          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.powerMode === 'low-power', onChange: (event) => save(controller, 'powerMode', event.target.checked ? 'low-power' : 'normal') }), ' 低功耗模式'] }),
-          jsx('label', { title: '推理强度滑条的滑块：默认是参考主题的白色圆钮，勾选后换成插件自带的大肥鱼贴图', children: [jsx('input', { type: 'checkbox', checked: state.settings.chibiThumb === true, onChange: (event) => save(controller, 'chibiThumb', event.target.checked) }), ' 推理滑条用大肥鱼贴图'] }),
-          jsx('hr', {}),
-          jsx('label', { children: ['Fairy 当前将我识别为：', jsx('select', { value: mode, onChange: (event) => save(identitySettings, 'mode', event.target.value), children: [jsx('option', { value: 'ling', children: '铃' }), jsx('option', { value: 'zhe', children: '哲' }), jsx('option', { value: 'custom', children: '自定义' })] })] }),
-          mode === 'custom' ? jsx('label', { children: ['自定义称呼：', jsx('input', { value: identityValue.customName || '', maxLength: 40, onChange: (event) => save(identitySettings, 'customName', event.target.value) })] }) : null,
-          mode === 'custom' ? jsx('label', { children: ['第二助手（可选）：', jsx('input', { value: identityValue.secondAssistant || '', maxLength: 40, onChange: (event) => save(identitySettings, 'secondAssistant', event.target.value) })] }) : null,
-          mode === 'custom' ? jsx('label', { children: ['家庭成员（可选，逗号分隔）：', jsx('input', { value: Array.isArray(identityValue.household) ? identityValue.household.join('、') : '', maxLength: 240, onChange: (event) => save(identitySettings, 'household', event.target.value.split(/[、,，]/).map((value) => value.trim()).filter(Boolean).slice(0, 12)) })] }) : null,
-          jsx('hr', {}),
+          jsx(Card, {
+            title: 'HDD 视觉',
+            hint: state.settings.enabled ? '已开启' : '已关闭',
+            children: jsxs('div', {
+              className: 'dsh-fairy-rows',
+              children: [
+                jsx(SwitchRow, {
+                  title: '启用 HDD 视觉',
+                  hint: '网格背景、发光描边与控制台外观',
+                  checked: state.settings.enabled,
+                  onChange: (event) => save(controller, 'enabled', event.target.checked),
+                }),
+                jsx(SwitchRow, {
+                  title: 'HDD 日间模式',
+                  hint: '浅色配色，与平台 light 主题对齐',
+                  checked: state.settings.theme === 'light',
+                  onChange: (event) => save(controller, 'theme', event.target.checked ? 'light' : 'dark'),
+                }),
+                jsx(SwitchRow, {
+                  title: '显示 Fairy 主视觉',
+                  hint: '关闭后只保留右下角控制条',
+                  checked: state.settings.mascotVisible,
+                  onChange: (event) => save(controller, 'mascotVisible', event.target.checked),
+                }),
+                jsx(SwitchRow, {
+                  title: '低功耗模式',
+                  hint: '停掉装饰动画，保留呼吸与状态气泡',
+                  checked: state.settings.powerMode === 'low-power',
+                  onChange: (event) => save(controller, 'powerMode', event.target.checked ? 'low-power' : 'normal'),
+                }),
+                jsx(SwitchRow, {
+                  title: '推理滑条用大肥鱼贴图',
+                  titleAttr: '推理强度滑条的滑块：默认是参考主题的白色圆钮，勾选后换成插件自带的大肥鱼贴图',
+                  hint: '默认是参考主题的白色圆钮',
+                  checked: state.settings.chibiThumb === true,
+                  onChange: (event) => save(controller, 'chibiThumb', event.target.checked),
+                }),
+              ],
+            }),
+          }),
+          jsx(Card, {
+            title: '身份与称呼',
+            hint: mode === 'custom' ? '自定义' : mode === 'zhe' ? '哲' : '铃',
+            children: jsxs('div', {
+              className: 'dsh-fairy-rows dsh-fairy-rows--padded',
+              children: [
+                jsx(Field, {
+                  label: 'Fairy 当前将我识别为',
+                  hint: '身份会写进系统提示词的身份条款，Fairy 不会再凭对话猜称呼',
+                  children: jsx('select', {
+                    value: mode,
+                    onChange: (event) => save(identitySettings, 'mode', event.target.value),
+                    children: [
+                      jsx('option', { value: 'ling', children: '铃' }),
+                      jsx('option', { value: 'zhe', children: '哲' }),
+                      jsx('option', { value: 'custom', children: '自定义' }),
+                    ],
+                  }),
+                }),
+                mode === 'custom'
+                  ? jsx(Field, {
+                      label: '自定义称呼',
+                      children: jsx('input', { type: 'text', value: identityValue.customName || '', maxLength: 40, placeholder: '例如 铃', onChange: (event) => save(identitySettings, 'customName', event.target.value) }),
+                    })
+                  : null,
+                mode === 'custom'
+                  ? jsx(Field, {
+                      label: '第二助手（可选）',
+                      children: jsx('input', { type: 'text', value: identityValue.secondAssistant || '', maxLength: 40, placeholder: '例如 哲', onChange: (event) => save(identitySettings, 'secondAssistant', event.target.value) }),
+                    })
+                  : null,
+                mode === 'custom'
+                  ? jsx(Field, {
+                      label: '家庭成员（可选）',
+                      hint: '用「、」或逗号分隔，最多 12 个',
+                      children: jsx('input', { type: 'text', value: household, maxLength: 240, placeholder: '例如 安比、妮可', onChange: (event) => save(identitySettings, 'household', event.target.value.split(/[、,，]/).map((value) => value.trim()).filter(Boolean).slice(0, 12)) }),
+                    })
+                  : null,
+              ],
+            }),
+          }),
           jsx(TtsSettings, {}),
-          jsx('hr', {}),
-          jsx(PersonaSettings, { personaSettings }),
-          jsx('hr', {}),
           // The voice package mounts its briefing panel here (shared "Fairy
-          // 控制台" section instead of a nav cell of its own).
-          jsx('div', { 'data-dsh-fairy-hub-voice': 'true' }),
+          // 控制台" section instead of a nav cell of its own). It brings its own
+          // card styling, so this host only claims the full grid row. It sits
+          // right after the TTS card because both configure the same voice.
+          jsx('div', { className: 'dsh-fairy-voice-host', 'data-dsh-fairy-hub-voice': 'true' }),
+          jsx(PersonaSettings, { personaSettings }),
         ],
       });
     }
@@ -1073,55 +1219,75 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
         }
       };
       if (state === 'missing') {
-        return jsxs('div', { className: 'dsh-fairy-settings-block', children: [jsx('h4', { children: '语音服务（TTS）' }), jsx('p', { children: '未安装 dsh-fairy-voice，语音服务不可配置。' })] });
+        return jsx(Card, { title: '语音服务（TTS）', wide: true, children: jsx('div', { className: 'dsh-fairy-rows dsh-fairy-rows--padded', children: jsx('p', { className: 'dsh-fairy-hint', children: '未安装 dsh-fairy-voice，语音服务不可配置。' }) }) });
       }
-      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
-        jsx('h4', { children: '语音服务（TTS）' }),
-        jsx('p', { className: 'dsh-fairy-hint', children: '默认读取 DSH_FAIRY_TTS_* 环境变量，这里保存的值优先。GPT-SoVITS 兼容端点返回原始 PCM；yovoice / IndexTTS 返回 WAV。' }),
-        jsx('label', { children: ['协议：', jsx('select', {
-          value: draft.protocol,
-          onChange: (event) => setDraft({ ...draft, protocol: event.target.value }),
-          children: [
-            jsx('option', { value: 'gpt-sovits', children: 'GPT-SoVITS 兼容（原始 PCM）' }),
-            jsx('option', { value: 'yovoice', children: 'yovoice / IndexTTS（WAV）' }),
-          ],
-        })] }),
-        jsx('label', { children: ['合成端点：', jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/generate' : 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }), style: { width: '100%' } })] }),
-        jsx('label', { children: ['探活端点：', jsx('input', { type: 'url', value: draft.docsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/status' : 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }), style: { width: '100%' } })] }),
-        jsx('label', { children: ['API Key（可选）：', jsx('input', { type: 'password', value: draft.apiKey, autoComplete: 'off', placeholder: config?.apiKeySet ? `已设置 ${config.apiKeyMask || ''}（留空保持不变）` : '云端语音服务需要时填写，本地 GPT-SoVITS 留空', onChange: (event) => setDraft({ ...draft, apiKey: event.target.value }), style: { width: '100%' } })] }),
-        config?.apiKeySet
-          ? jsxs('div', { className: 'dsh-fairy-hint', children: [
-              `API Key 已设置${config.apiKeySource === 'env' ? '（来自 DSH_FAIRY_TTS_APIKEY）' : ''}，请求会带 Authorization: Bearer …；`,
-              jsx('button', { type: 'button', onClick: clearKey, disabled: state === 'saving', children: '清除 API Key' }),
-            ] })
-          : jsx('div', { className: 'dsh-fairy-hint', children: draft.protocol === 'yovoice' ? '未设置 API Key；yovoice 的 /v1/* 端点通常需要 Authorization 头。' : '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
-        draft.protocol === 'yovoice'
-          ? jsxs('div', { className: 'dsh-fairy-tts-engine', children: [
-              jsx('label', { children: ['模型：', jsx('input', { type: 'text', list: 'dsh-fairy-tts-models', value: draft.modelId, placeholder: '例如 index-2.5-f16（留空用引擎默认）', onChange: (event) => setDraft({ ...draft, modelId: event.target.value }), style: { width: '100%' } })] }),
-              jsx('datalist', { id: 'dsh-fairy-tts-models', children: (engine?.models || []).map((model) => jsx('option', { value: model.id })) }),
-              jsx('label', { children: ['音色：', jsx('input', { type: 'text', list: 'dsh-fairy-tts-voices', value: draft.voiceId, placeholder: '引擎里导入的音色 id（留空用默认音色）', onChange: (event) => setDraft({ ...draft, voiceId: event.target.value }), style: { width: '100%' } })] }),
-              jsx('datalist', { id: 'dsh-fairy-tts-voices', children: (engine?.voices || []).map((voice) => jsx('option', { value: voice.id, label: voice.name })) }),
-              jsxs('div', { className: 'dsh-fairy-hint', children: [
-                '音色来自引擎里已导入的参考音频；',
-                jsx('button', { type: 'button', onClick: loadEngine, disabled: state === 'loading-engine', children: state === 'loading-engine' ? '读取中…' : '读取引擎模型/音色' }),
-                engine?.supported ? ` 已读取 ${engine.models.length} 模型 / ${engine.voices.length} 音色` : '',
+      return jsx(Card, {
+        title: '语音服务（TTS）',
+        wide: true,
+        hint: draft.protocol === 'yovoice' ? 'yovoice / IndexTTS' : 'GPT-SoVITS',
+        children: [
+          jsxs('div', {
+            className: 'dsh-fairy-rows dsh-fairy-rows--padded',
+            children: [
+              jsx('p', { className: 'dsh-fairy-hint', children: draft.protocol === 'yovoice' ? 'yovoice 走 /v1/generate，返回 WAV；音色取自引擎里导入的参考音频。' : 'GPT-SoVITS 兼容端点返回 32 kHz 单声道 PCM；参考音频用于克隆音色。' }),
+              jsx(Details, {
+                title: '连接与鉴权',
+                hint: safeHost(draft.docsUrl || draft.ttsUrl) || '未配置端点',
+                children: [
+                  jsx(Field, { label: '协议', children: jsx('select', {
+                    value: draft.protocol,
+                    onChange: (event) => setDraft({ ...draft, protocol: event.target.value }),
+                    children: [
+                      jsx('option', { value: 'gpt-sovits', children: 'GPT-SoVITS 兼容（原始 PCM）' }),
+                      jsx('option', { value: 'yovoice', children: 'yovoice / IndexTTS（WAV）' }),
+                    ],
+                  }) }),
+                  jsx(Field, { label: '合成端点', children: jsx('input', { type: 'url', value: draft.ttsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/generate' : 'http://127.0.0.1:9880/tts', onChange: (event) => setDraft({ ...draft, ttsUrl: event.target.value }) }) }),
+                  jsx(Field, { label: '探活端点', children: jsx('input', { type: 'url', value: draft.docsUrl, placeholder: draft.protocol === 'yovoice' ? 'http://127.0.0.1:9880/v1/status' : 'http://127.0.0.1:9880/docs', onChange: (event) => setDraft({ ...draft, docsUrl: event.target.value }) }) }),
+                  jsx(Field, { label: 'API Key（可选）', children: jsx('input', { type: 'password', value: draft.apiKey, autoComplete: 'off', placeholder: config?.apiKeySet ? `已设置 ${config.apiKeyMask || ''}（留空保持不变）` : '云端语音服务需要时填写，本地 GPT-SoVITS 留空', onChange: (event) => setDraft({ ...draft, apiKey: event.target.value }) }) }),
+                  config?.apiKeySet
+                    ? jsxs('div', { className: 'dsh-fairy-hint', children: [
+                        `API Key 已设置${config.apiKeySource === 'env' ? '（来自 DSH_FAIRY_TTS_APIKEY）' : ''}，请求会带 Authorization: Bearer …；`,
+                        jsx('button', { type: 'button', onClick: clearKey, disabled: state === 'saving', children: '清除 API Key' }),
+                      ] })
+                    : jsx('div', { className: 'dsh-fairy-hint', children: draft.protocol === 'yovoice' ? '未设置 API Key；yovoice 的 /v1/* 端点通常需要 Authorization 头。' : '未设置 API Key；请求不带 Authorization 头，适配默认的本地 GPT-SoVITS。' }),
+                  jsx('p', { className: 'dsh-fairy-hint', children: '默认读取 DSH_FAIRY_TTS_* 环境变量，这里保存的值优先。' }),
+                ],
+              }),
+            ],
+          }),
+          jsxs('div', {
+            className: 'dsh-fairy-rows dsh-fairy-rows--padded',
+            children: [
+              draft.protocol === 'yovoice'
+                ? jsxs('div', { className: 'dsh-fairy-tts-engine', children: [
+                    jsx(Field, { label: '模型', children: jsx('input', { type: 'text', list: 'dsh-fairy-tts-models', value: draft.modelId, placeholder: '例如 index-2.5-f16（留空用引擎默认）', onChange: (event) => setDraft({ ...draft, modelId: event.target.value }) }) }),
+                    jsx('datalist', { id: 'dsh-fairy-tts-models', children: (engine?.models || []).map((model) => jsx('option', { value: model.id })) }),
+                    jsx(Field, { label: '音色', children: jsx('input', { type: 'text', list: 'dsh-fairy-tts-voices', value: draft.voiceId, placeholder: '引擎里导入的音色 id（留空用默认音色）', onChange: (event) => setDraft({ ...draft, voiceId: event.target.value }) }) }),
+                    jsx('datalist', { id: 'dsh-fairy-tts-voices', children: (engine?.voices || []).map((voice) => jsx('option', { value: voice.id, label: voice.name })) }),
+                    jsxs('div', { className: 'dsh-fairy-hint', children: [
+                      '音色来自引擎里已导入的参考音频；',
+                      jsx('button', { type: 'button', onClick: loadEngine, disabled: state === 'loading-engine', children: state === 'loading-engine' ? '读取中…' : '读取引擎模型/音色' }),
+                      engine?.supported ? ` 已读取 ${engine.models.length} 模型 / ${engine.voices.length} 音色` : '',
+                    ] }),
+                  ] })
+                : jsx(Field, { label: '参考音频提示文本（GPT-SoVITS）', children: jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }) }) }),
+              draft.protocol === 'yovoice'
+                ? null
+                : jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
+              jsxs('div', { className: 'dsh-fairy-actions', children: [
+                jsx('button', { type: 'button', onClick: save, disabled: state === 'saving', children: state === 'saving' ? '保存中…' : '保存' }),
+                jsx('button', { type: 'button', onClick: probe, disabled: state === 'probing', children: state === 'probing' ? '检测中…' : '测试连接' }),
+                jsx('button', { type: 'button', onClick: preview, disabled: state === 'previewing', children: state === 'previewing' ? '合成中…' : '试听' }),
+                draft.protocol === 'yovoice'
+                  ? null
+                  : jsx('label', { className: 'dsh-fairy-upload', children: ['上传参考音频', jsx('input', { type: 'file', accept: 'audio/*', onChange: upload })] }),
               ] }),
-            ] })
-          : null,
-        jsx('label', { children: ['参考音频提示文本（GPT-SoVITS）：', jsx('textarea', { value: draft.promptText, rows: 2, placeholder: '参考音频里说的那句话', onChange: (event) => setDraft({ ...draft, promptText: event.target.value }), style: { width: '100%' } })] }),
-        draft.protocol === 'yovoice'
-          ? null
-          : jsx('div', { className: 'dsh-fairy-hint', children: config ? `当前参考音频：${config.referenceAudio || 'fairy_ref.wav'}${config.referencePresent ? `（${Math.round((config.referenceBytes || 0) / 1024)} KB）` : '（未上传）'}` : '读取中…' }),
-        jsxs('div', { className: 'dsh-fairy-actions', children: [
-          jsx('button', { type: 'button', onClick: save, disabled: state === 'saving', children: state === 'saving' ? '保存中…' : '保存' }),
-          jsx('button', { type: 'button', onClick: probe, disabled: state === 'probing', children: state === 'probing' ? '检测中…' : '测试连接' }),
-          jsx('button', { type: 'button', onClick: preview, disabled: state === 'previewing', children: state === 'previewing' ? '合成中…' : '试听' }),
-          draft.protocol === 'yovoice'
-            ? null
-            : jsx('label', { className: 'dsh-fairy-upload', children: ['上传参考音频', jsx('input', { type: 'file', accept: 'audio/*', onChange: upload })] }),
-        ] }),
-        note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
-      ] });
+              note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
+            ],
+          }),
+        ],
+      });
     }
 
     function PersonaSettings({ personaSettings }) {
@@ -1173,16 +1339,29 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
         setText((current) => `${current}${appended}`);
         setNote(`已插入 ${targets.length} 份语料（记得保存）`);
       };
-      return jsxs('div', { className: 'dsh-fairy-settings-block', children: [
-        jsx('h4', { children: 'Fairy 人设' }),
-        jsx('label', { children: [jsx('input', { type: 'checkbox', checked: enabled, onChange: (event) => { setEnabled(event.target.checked); } }), ' 启用人设注入（写入系统提示词）'] }),
+      return jsx(Card, {
+        title: 'Fairy 人设',
+        wide: true,
+        hint: info?.composed ? `注入 ${info.composed.chars} 字` : '写入系统提示词',
+        children: jsxs('div', {
+          className: 'dsh-fairy-rows',
+          children: [
+            jsx(SwitchRow, {
+              title: '启用人设注入',
+              hint: '关闭后系统提示词里不再有 Fairy 人设段',
+              checked: enabled,
+              onChange: (event) => { setEnabled(event.target.checked); },
+            }),
+            jsxs('div', {
+              className: 'dsh-fairy-rows dsh-fairy-rows--padded',
+              children: [
         jsx('textarea', {
           value: text,
-          rows: 16,
+          rows: 10,
           spellCheck: false,
           placeholder: '留空则使用内置的参考人设（绝区零 Fairy）。字数不限，可直接粘贴整份语料。',
           onChange: (event) => setText(event.target.value),
-          style: { width: '100%', fontFamily: 'inherit', lineHeight: 1.5 },
+          style: { fontFamily: 'inherit', lineHeight: 1.5, resize: 'vertical' },
         }),
         jsx('div', { className: 'dsh-fairy-hint', children: `当前 ${text.length} 字${info?.composed ? `；注入后约 ${info.composed.chars} 字（来源：${info.composed.source === 'custom' ? '自定义' : '内置'}，语料 ${info.composed.corpus?.length || 0} 份）` : ''}` }),
         jsxs('div', { className: 'dsh-fairy-actions', children: [
@@ -1190,14 +1369,25 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
           jsx('button', { type: 'button', onClick: () => { setText(info?.defaultText || ''); setNote('已载入内置参考人设（记得保存）'); }, children: '载入内置人设' }),
           jsx('button', { type: 'button', onClick: () => { setText(''); setNote('已清空（保存后回落内置人设）'); }, children: '清空' }),
         ] }),
-        jsxs('div', { className: 'dsh-fairy-actions', children: [
-          jsxs('select', { value: picked, onChange: (event) => setPicked(event.target.value), children: [jsx('option', { value: '', children: '选择参考语料…' }), ...corpus.map((entry) => jsx('option', { value: entry.id, children: `${entry.id}（${Math.round(entry.bytes / 1024)} KB）` }, entry.id))] }),
-          jsx('button', { type: 'button', disabled: !picked, onClick: () => insert(picked), children: '插入选中语料' }),
-          jsx('button', { type: 'button', disabled: !corpus.length, onClick: () => insert('', true), children: `全部插入（${corpus.length} 份）` }),
-        ] }),
-        jsx('p', { className: 'dsh-fairy-hint', children: '全部插入会把参考项目的完整语料写进系统提示词（约 400 KB），token 成本很高；建议按需插入。' }),
+        jsx(Details, {
+          title: '参考语料',
+          hint: `${corpus.length} 份 · 约 ${Math.round(corpus.reduce((sum, entry) => sum + entry.bytes, 0) / 1024)} KB`,
+          children: [
+            jsx('div', { className: 'dsh-fairy-hint', children: '来自参考项目的行为规范、经典设定与语气样本，可按需插入正文。' }),
+            jsxs('select', { value: picked, onChange: (event) => setPicked(event.target.value), children: [jsx('option', { value: '', children: '选择参考语料…' }), ...corpus.map((entry) => jsx('option', { value: entry.id, children: `${entry.id}（${Math.round(entry.bytes / 1024)} KB）` }, entry.id))] }),
+            jsxs('div', { className: 'dsh-fairy-actions', children: [
+              jsx('button', { type: 'button', disabled: !picked, onClick: () => insert(picked), children: '插入选中语料' }),
+              jsx('button', { type: 'button', disabled: !corpus.length, onClick: () => insert('', true), children: `全部插入（${corpus.length} 份）` }),
+            ] }),
+            jsx('p', { className: 'dsh-fairy-hint', children: '全部插入会把完整语料写进系统提示词（约 400 KB），token 成本很高；建议按需插入。' }),
+          ],
+        }),
         note ? jsx('p', { className: 'dsh-fairy-hint', children: note }) : null,
-      ] });
+              ],
+            }),
+          ],
+        }),
+      });
     }
 
 function apply(ctx) {

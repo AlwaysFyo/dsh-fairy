@@ -398,17 +398,44 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 .dsh-fairy-theme-toggle[data-theme="dark"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important;border:0!important;border-radius:0!important;transform:none!important;background:radial-gradient(circle,transparent 0 4px,currentColor 4px 5.5px,transparent 5.5px)!important;-webkit-mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important;mask:conic-gradient(from 342deg,#000 0 305deg,transparent 305deg 360deg)!important}
 .dsh-fairy-theme-toggle[data-theme="light"] .dsh-fairy-theme-icon{width:13px!important;height:13px!important}`);
 
-  // Settings blocks for the two new configuration surfaces (TTS bridge and
-  // persona). Stock settings rows are plain labels; these need a card, inputs
-  // and an action row, so give them a self-contained HDD-styled shell instead
-  // of inheriting the generic settings typography.
-  appendSection('settings-blocks', `.dsh-fairy-settings-block{display:grid;gap:8px;border:1px solid rgba(100,210,255,.18);border-radius:10px;padding:12px 14px;background:rgba(8,20,32,.38)}
-.dsh-fairy-settings-block h4{margin:0;font-size:13px;font-weight:600;letter-spacing:.02em}
+  // Fairy console: one card per concern. The first version was a flat column of
+  // native 13px checkboxes, 17px <h4>s and 2px <hr>s, which read as a dump of
+  // controls rather than a settings page. Cards group related switches, rows are
+  // hairline-separated with their own hint line, and checkboxes are drawn as
+  // switches (still real <input type=checkbox> — behaviour, a11y and the probes
+  // that click them by rect are unchanged).
+  appendSection('settings-hub', `.dsh-fairy-hub{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(288px,1fr));align-content:start;padding:4px 2px 24px}
+.dsh-fairy-card{display:flex;flex-direction:column;min-width:0;border:1px solid rgba(100,210,255,.16);border-radius:12px;background:rgba(8,20,32,.42);overflow:hidden}
+.dsh-fairy-card--wide,.dsh-fairy-settings-block,.dsh-fairy-voice-host{grid-column:1/-1}
+.dsh-fairy-card-head{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid rgba(100,210,255,.12);background:rgba(100,210,255,.05)}
+.dsh-fairy-card-title,.dsh-fairy-settings-block h4{display:flex;align-items:center;gap:7px;margin:0;padding:0;font-size:12px;font-weight:600;letter-spacing:.03em}
+.dsh-fairy-card-title::before,.dsh-fairy-settings-block h4::before{content:"";width:5px;height:5px;border-radius:50%;background:#61d7ff;box-shadow:0 0 6px rgba(97,215,255,.85);flex:0 0 auto}
+.dsh-fairy-card-hint{margin-left:auto;font-size:11px;opacity:.62;white-space:nowrap}
+.dsh-fairy-rows{display:grid}
+.dsh-fairy-rows--padded{display:grid;gap:10px;padding:12px 13px}
+.dsh-fairy-row{display:flex;align-items:center;gap:12px;padding:9px 13px;cursor:pointer;border-top:1px solid rgba(100,210,255,.10)}
+.dsh-fairy-rows>.dsh-fairy-row:first-child{border-top:0}
+.dsh-fairy-row:hover{background:rgba(100,210,255,.05)}
+.dsh-fairy-row-text{display:grid;gap:2px;flex:1;min-width:0}
+.dsh-fairy-row-title{font-size:12.5px;line-height:1.35}
+.dsh-fairy-row-hint{font-size:11px;line-height:1.4;opacity:.6}
+.dsh-fairy-switch{appearance:none;-webkit-appearance:none;flex:0 0 auto;margin:0;width:34px;height:20px;border-radius:999px;background:rgba(140,160,180,.25);border:1px solid rgba(150,170,190,.35);position:relative;cursor:pointer;transition:background 150ms ease,border-color 150ms ease}
+.dsh-fairy-switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#dbe6f2;transition:transform 160ms ease,background 160ms ease}
+.dsh-fairy-switch:checked{background:rgba(97,215,255,.55);border-color:rgba(97,215,255,.8)}
+.dsh-fairy-switch:checked::after{transform:translateX(14px);background:#07131f}
+.dsh-fairy-switch:focus-visible{outline:2px solid rgba(97,215,255,.75);outline-offset:2px}
+.dsh-fairy-field{display:grid;gap:5px;font-size:12px}
+.dsh-fairy-field-label{font-size:11px;letter-spacing:.02em;opacity:.7}
+.dsh-fairy-field-hint{font-size:11px;line-height:1.45;opacity:.55}
+.dsh-fairy-settings-block{display:grid;gap:9px;border:1px solid rgba(100,210,255,.16);border-radius:12px;padding:0;background:rgba(8,20,32,.42);overflow:hidden}
+.dsh-fairy-settings-block h4{padding:10px 13px;border-bottom:1px solid rgba(100,210,255,.12);background:rgba(100,210,255,.05)}
+.dsh-fairy-settings-block>:not(h4){margin:0 13px}
+.dsh-fairy-settings-block>:last-child{margin-bottom:13px}
 .dsh-fairy-settings-block label{display:grid;gap:4px;font-size:12px}
-.dsh-fairy-settings-block input[type="url"],.dsh-fairy-settings-block input[type="text"],.dsh-fairy-settings-block input[type="password"],.dsh-fairy-settings-block textarea,.dsh-fairy-settings-block select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
-.dsh-fairy-settings-block textarea{resize:vertical;min-height:96px}
+.dsh-fairy-hub input[type="url"],.dsh-fairy-hub input[type="text"],.dsh-fairy-hub input[type="password"],.dsh-fairy-hub textarea,.dsh-fairy-hub select{background:rgba(4,12,20,.5)!important;border:1px solid rgba(100,210,255,.22)!important;border-radius:8px;padding:6px 8px;color:inherit;font:inherit;font-size:12px;box-sizing:border-box}
+.dsh-fairy-hub textarea{resize:vertical;min-height:96px}
 .dsh-fairy-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.dsh-fairy-actions button{border:1px solid rgba(100,210,255,.28);background:rgba(100,210,255,.10);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:inherit;font:inherit;font-size:12px}
+.dsh-fairy-actions button{border:1px solid rgba(100,210,255,.28);background:rgba(100,210,255,.10);border-radius:8px;padding:4px 10px;cursor:pointer;color:inherit;font:inherit;font-size:12px}
 .dsh-fairy-actions button:hover:not(:disabled){background:rgba(100,210,255,.18)}
 .dsh-fairy-actions button:disabled{opacity:.6;cursor:default}
 .dsh-fairy-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center;border:1px dashed rgba(100,210,255,.32);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
@@ -417,7 +444,51 @@ html[data-dsh-fairy-visual][data-dsh-fairy-theme] [data-dsh-fairy-composer-dock=
 .dsh-fairy-hint button{margin-left:8px;border:1px solid rgba(100,210,255,.24);background:transparent;border-radius:6px;padding:1px 8px;font:inherit;font-size:11px;color:inherit;cursor:pointer}
 .dsh-fairy-hint button:hover:not(:disabled){background:rgba(100,210,255,.14)}
 .dsh-fairy-hint button:disabled{opacity:.6;cursor:default}`);
-  appendSection('settings-blocks', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(244,247,251,.7);border-color:rgba(34,126,166,.22)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block input[type="password"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block select{background:rgba(255,255,255,.85)!important;border-color:rgba(34,126,166,.28)!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hint button{border-color:rgba(34,126,166,.3)}`);
+  appendSection('settings-hub', `html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-card{background:rgba(255,255,255,.72);border-color:rgba(34,126,166,.22)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-card-head{background:rgba(34,126,166,.06);border-bottom-color:rgba(34,126,166,.16)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-card-title::before{background:#227ea6;box-shadow:none}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-row{border-top-color:rgba(34,126,166,.12)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-details{border-top-color:rgba(34,126,166,.12)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-details-summary:hover{background:rgba(34,126,166,.06)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-row:hover{background:rgba(34,126,166,.06)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-switch{background:rgba(120,140,160,.22);border-color:rgba(110,135,155,.4)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-switch:checked{background:rgba(34,126,166,.55);border-color:rgba(34,126,166,.75)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-switch:checked::after{background:#fff}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block{background:rgba(255,255,255,.72);border-color:rgba(34,126,166,.22)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block h4{background:rgba(34,126,166,.06);border-bottom-color:rgba(34,126,166,.16)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-settings-block h4::before{background:#227ea6;box-shadow:none}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hub input[type="url"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hub input[type="text"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hub input[type="password"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hub textarea,html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hub select{background:rgba(255,255,255,.88)!important;border-color:rgba(34,126,166,.28)!important}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-actions button{border-color:rgba(34,126,166,.3);background:rgba(34,126,166,.1)}
+html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .dsh-fairy-hint button{border-color:rgba(34,126,166,.3)}`);
+
+  // Layout fixes for the card body: the engine fields need their own vertical
+  // rhythm, the persona textarea may never exceed the card (it used to overflow
+  // by 11px because an inline width:100% ignored the 13px body padding), and the
+  // voice panel is rendered into our host by another plugin, so it only gets a
+  // max-width guarantee from us.
+  appendSection('settings-hub', `.dsh-fairy-tts-engine{display:grid;gap:10px}
+.dsh-fairy-hub textarea{min-height:120px;max-width:100%}
+.dsh-fairy-voice-host{display:block;min-width:0}
+.dsh-fairy-voice-host>*{max-width:100%;box-sizing:border-box}
+/* The panel is only ~564px wide, so a single screen has to hold five cards:
+   tighten the vertical rhythm instead of stretching every row. */
+.dsh-fairy-hub{gap:10px}
+.dsh-fairy-card-head{padding:8px 13px}
+.dsh-fairy-rows--padded{gap:9px;padding:10px 13px}
+.dsh-fairy-row{padding:7px 13px}
+.dsh-fairy-row-title{font-size:12px}
+.dsh-fairy-row-hint{font-size:10.5px;opacity:.58}
+.dsh-fairy-actions>select{flex:1 1 auto;min-width:0;max-width:100%}
+.dsh-fairy-actions>button{flex:0 0 auto}
+/* Collapsed disclosures keep the long tail of the console out of the way. */
+.dsh-fairy-details{border-top:1px solid rgba(100,210,255,.10)}
+.dsh-fairy-details-summary{display:flex;align-items:center;gap:8px;padding:7px 13px;cursor:pointer;list-style:none;font-size:11.5px;letter-spacing:.02em}
+.dsh-fairy-details-summary::-webkit-details-marker{display:none}
+.dsh-fairy-details-summary::before{content:"";width:0;height:0;border-left:4px solid currentColor;border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;opacity:.6;transition:transform 150ms ease}
+.dsh-fairy-details[open]>.dsh-fairy-details-summary::before{transform:rotate(90deg)}
+.dsh-fairy-details-summary:hover{background:rgba(100,210,255,.05)}
+.dsh-fairy-details-title{flex:1 1 auto;min-width:0;opacity:.9}
+.dsh-fairy-details-hint{font-size:10.5px;opacity:.55;white-space:nowrap}`);
 
   el.textContent = cssSections.map(({ css }) => css).join('');
 
