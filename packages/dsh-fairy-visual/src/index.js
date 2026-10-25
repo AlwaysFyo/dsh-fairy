@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   mascotVisible: true,
   mascotScale: 1,
   mascotAnimationSpeed: 1,
+  chibiThumb: false,
   powerMode: 'normal',
   composerDockHeight: 132,
   accent: 'fairy-blue',
@@ -114,6 +115,10 @@ const normalize = (raw) => {
   next.enabled = next.enabled === true
   next.theme = next.theme === 'light' ? 'light' : 'dark'
   next.mascotVisible = next.mascotVisible !== false
+  /* The reasoning slider ships a running-fish sprite thumb; the reference theme
+   * replaces it with a plain knob, so the plain knob is the default here and the
+   * sprite is an opt-in. */
+  next.chibiThumb = next.chibiThumb === true
   next.powerMode = next.powerMode === 'low-power' ? 'low-power' : 'normal'
   const scale = finiteNumber(next.mascotScale)
   next.mascotScale = Number.isFinite(scale) ? clampNumber(scale, 0.55, 1) : 1

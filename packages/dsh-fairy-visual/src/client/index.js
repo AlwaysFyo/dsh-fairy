@@ -877,6 +877,7 @@ const diagnostics = createFairyDiagnostics('dsh-fairy-visual');
           jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.theme === 'light', onChange: (event) => save(controller, 'theme', event.target.checked ? 'light' : 'dark') }), ' HDD 日间模式'] }),
           jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.mascotVisible, onChange: (event) => save(controller, 'mascotVisible', event.target.checked) }), ' 显示 Fairy 主视觉'] }),
           jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.powerMode === 'low-power', onChange: (event) => save(controller, 'powerMode', event.target.checked ? 'low-power' : 'normal') }), ' 低功耗模式'] }),
+          jsx('label', { title: '推理强度滑条的滑块：默认是参考主题的白色圆钮，勾选后换成插件自带的大肥鱼贴图', children: [jsx('input', { type: 'checkbox', checked: state.settings.chibiThumb === true, onChange: (event) => save(controller, 'chibiThumb', event.target.checked) }), ' 推理滑条用大肥鱼贴图'] }),
           jsx('hr', {}),
           jsx('label', { children: ['Fairy 当前将我识别为：', jsx('select', { value: mode, onChange: (event) => save(identitySettings, 'mode', event.target.value), children: [jsx('option', { value: 'ling', children: '铃' }), jsx('option', { value: 'zhe', children: '哲' }), jsx('option', { value: 'custom', children: '自定义' })] })] }),
           mode === 'custom' ? jsx('label', { children: ['自定义称呼：', jsx('input', { value: identityValue.customName || '', maxLength: 40, onChange: (event) => save(identitySettings, 'customName', event.target.value) })] }) : null,

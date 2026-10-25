@@ -43,7 +43,7 @@
 
 | 区块 | 内容 | 存放位置 |
 | --- | --- | --- |
-| HDD 视觉 | 启用 HDD、日间模式、显示主视觉、低功耗 | `$DSH_HOME/fairy-visual/settings.json` |
+| HDD 视觉 | 启用 HDD、日间模式、显示主视觉、低功耗、推理滑条用大肥鱼贴图 | `$DSH_HOME/fairy-visual/settings.json` |
 | 身份 | 铃 / 哲 / 自定义（自定义时另有第二助手、家庭成员） | `$DSH_HOME/fairy-identity/identity.json` |
 | 语音服务（TTS） | 协议（`gpt-sovits` / `yovoice`）、`ttsUrl`、`docsUrl`、API Key（可选，Bearer）、参考音频提示文本、参考音频文件（≤24 MB，wav/mp3/flac/ogg/m4a）、yovoice 的模型与音色 id、保存 / 测试连接 / 试听 / 读取引擎模型音色 / 清除 API Key | `$DSH_HOME/fairy-voice/tts-config.json`，音频落在 `$DSH_HOME/fairy-voice/runtime/reference/` |
 | Fairy 人设 | 字数不限的人设正文（留空 = 内置参考人设），可检索并插入 11 份参考语料 | `$DSH_HOME/fairy-persona/persona.json` |
@@ -196,6 +196,7 @@ node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
 | 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
 | 右侧边栏原始承载面 | 按用户要求（m06540）撤回右栏蒙板、全屏网格/底色和三态 `ResizeObserver`：参考项目基于 0.1.1、没有 0.2.1 的右栏全屏，不能据此自绘；恢复原生 `_tabHost` 的 `background:var(--dsw-alias-bg-base)`，仅保留右栏 1px 分界线。停靠面板 `[1122,0,918,1200]`，全屏 `[0,0,2040,1200]`；全屏实测深色 `rgb(7,16,28)`、浅色 `rgb(247,250,252)`，均为纯色、无网格，底层对话不再透出 |
 | 模型与推理强度弹窗 | 座位是 `@ayanehana/dsh-reasoning-effort` 的 fallback 组件：`.re-model-trigger` 220×28 @ `[1569,1154]`、文字 `DeepSeek-V4-Pro Max`；弹层 `aria-label="模型与推理强度"`（312 宽），有档位模型显示 `.re-advanced` + `.re-effort-input[max=3]`，无档位模型显示「当前模型未提供推理强度档位」；真实拖拽 `High → Off → Max`，trigger 的 `aria-label` 同步；深色刻度 4.95 / 选中 9.44 / 名称 7.87，浅色 5.87 / 5.82，全部 ≥ 4.5（`tools/cdp/reasoning-check.mjs`） |
+| 推理滑条滑块 | 默认是参考站的白色圆钮（30×30、`border-radius:50%`、紫色辉光），插件自带的「大肥鱼」贴图改为 opt-in：勾选「推理滑条用大肥鱼贴图」后 `.re-effort-knob` 变成 `data:image/png` 贴图、40×55，取消勾选立刻回到圆钮；属性由 `data-dsh-fairy-chibi-thumb` 门控，`utils.js` 的 `MutationObserver` 负责插件后渲染的滑块。8 项不变量见 `.dsh-dev-home/chibi-thumb-check.mjs` |
 
 ### 设置面板的打开前提
 

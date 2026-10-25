@@ -26,6 +26,7 @@ function migrateVisualSettings(input = {}) {
     mascotAnimationSpeed: Number.isFinite(numericSpeed) ? nearest(numericSpeed, SPEED_STOPS) : 1,
     powerMode: source.powerMode === 'low-power' ? 'low-power' : 'normal',
     composerDockHeight: Number.isFinite(numericComposerHeight) ? Math.round(clamp(numericComposerHeight, 132, 420)) : 132,
+    chibiThumb: source.chibiThumb === true,
   };
 }
 

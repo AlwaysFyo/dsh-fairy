@@ -132,6 +132,17 @@ Modifications made by this project
     `--dsh-composer-model-text-display`/`--dsh-composer-model-icon-display` on
     that row and lifts the effort label and tick contrast above 4.5:1; geometry
     (220x28 seat, ~35px gap to the send button) follows the plugin's own layout.
+20. The effort slider thumb: `@ayanehana/dsh-reasoning-effort` draws a running
+    "大肥鱼" sprite sheet (40x55, `animation: re-chibi-run`) whenever
+    `is-chibi` is on, which is its default. Fairy-DSH's own profile patch
+    replaces that sprite with a plain white knob, so this repository does the
+    same by CSS only (no plugin code is modified): `.re-effort.is-chibi
+    .re-effort-knob` becomes a 28x28 white circle with a violet glow, gated on
+    `html[data-dsh-fairy-visual]:not([data-dsh-fairy-chibi-thumb="true"])`. The
+    sprite stays available as a setting (`chibiThumb`, off by default) for users
+    who prefer the plugin's own look; enabling it writes
+    `data-dsh-fairy-chibi-thumb="true"` and adds `is-chibi` from a
+    `MutationObserver` so the plugin's later-rendered slider is covered too.
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE

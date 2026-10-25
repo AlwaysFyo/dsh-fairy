@@ -3,6 +3,7 @@ export const STYLE_ID = 'dsh-fairy-visual-style';
 export const MODE_ATTR = 'data-dsh-fairy-mode';
 export const POWER_MODE_ATTR = 'data-dsh-fairy-power-mode';
 export const THEME_ATTR = 'data-dsh-fairy-theme';
+export const CHIBI_THUMB_ATTR = 'data-dsh-fairy-chibi-thumb';
 export const POWER_TOGGLE_WIDTH = 82;
 export const POWER_TOGGLE_HEIGHT = 22;
 
@@ -13,6 +14,7 @@ export const DEFAULT = {
   mascotVisible: true,
   mascotScale: 1,
   mascotAnimationSpeed: 1,
+  chibiThumb: false,
   powerMode: 'normal',
   composerDockHeight: 132
 };

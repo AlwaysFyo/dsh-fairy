@@ -107,6 +107,7 @@ const STYLE_ID = 'dsh-fairy-visual-style';
 const MODE_ATTR = 'data-dsh-fairy-mode';
 const POWER_MODE_ATTR = 'data-dsh-fairy-power-mode';
 const THEME_ATTR = 'data-dsh-fairy-theme';
+const CHIBI_THUMB_ATTR = 'data-dsh-fairy-chibi-thumb';
 const POWER_TOGGLE_WIDTH = 82;
 const POWER_TOGGLE_HEIGHT = 22;
 
@@ -117,6 +118,7 @@ const DEFAULT = {
   mascotVisible: true,
   mascotScale: 1,
   mascotAnimationSpeed: 1,
+  chibiThumb: false,
   powerMode: 'normal',
   composerDockHeight: 132
 };
@@ -132,6 +134,7 @@ const HERO_PLACEHOLDERS = [
 
 const constants = /*#__PURE__*/Object.defineProperty({
 	__proto__: null,
+	CHIBI_THUMB_ATTR,
 	DEFAULT,
 	HERO_PLACEHOLDERS,
 	MODE_ATTR,
@@ -228,6 +231,49 @@ function deriveSessionComfort(snapshot) {
   return false;
 }
 
+const INJECTED_ATTR = 'data-dsh-fairy-chibi-injected';
+let chibiWanted = false;
+let thumbObserver = null;
+let thumbFrame = 0;
+
+/** The third-party slider keys its sprite thumb off a `.is-chibi` class it only
+ *  picks up at module init. Adding the class ourselves lets the opt-in apply
+ *  without a reload; we only ever remove a class we added. */
+function applyChibiThumb() {
+  if (typeof document === 'undefined') return;
+  for (const effort of document.querySelectorAll('.re-effort')) {
+    const injected = effort.getAttribute(INJECTED_ATTR) === 'true';
+    if (chibiWanted && !effort.classList.contains('is-chibi')) {
+      effort.classList.add('is-chibi');
+      effort.setAttribute(INJECTED_ATTR, 'true');
+    } else if (!chibiWanted && injected) {
+      effort.classList.remove('is-chibi');
+      effort.removeAttribute(INJECTED_ATTR);
+    }
+  }
+}
+
+function scheduleChibiThumb() {
+  if (thumbFrame) return;
+  thumbFrame = requestAnimationFrame(() => {
+    thumbFrame = 0;
+    applyChibiThumb();
+  });
+}
+
+function watchChibiThumb() {
+  if (thumbObserver || typeof MutationObserver === 'undefined') return;
+  thumbObserver = new MutationObserver(scheduleChibiThumb);
+  thumbObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+function syncReasoningThumb(wanted) {
+  chibiWanted = wanted === true;
+  if (!chibiWanted && !thumbObserver) return;
+  watchChibiThumb();
+  applyChibiThumb();
+}
+
 function deriveSessionActivity(snapshot) {
   if (deriveSessionComfort(snapshot)) return 'comforting';
   return snapshot?.running === true ? 'thinking' : 'normal';
@@ -249,18 +295,26 @@ function syncDocumentMode(snapshot) {
     root.setAttribute(THEME_ATTR, theme);
     root.setAttribute(MODE_ATTR, 'hdd');
     root.setAttribute(POWER_MODE_ATTR, powerMode);
+    // Opt-in sprite thumb for the reasoning slider; the plain knob is the
+    // reference default, so the attribute is only written when asked for.
+    if (value.chibiThumb === true) root.setAttribute(CHIBI_THUMB_ATTR, 'true');
+    else root.removeAttribute(CHIBI_THUMB_ATTR);
+    syncReasoningThumb(value.chibiThumb === true);
   } else {
     root.removeAttribute('data-dsh-fairy-visual');
     root.removeAttribute(THEME_ATTR);
     root.removeAttribute(MODE_ATTR);
     root.removeAttribute(POWER_MODE_ATTR);
+    root.removeAttribute(CHIBI_THUMB_ATTR);
+    syncReasoningThumb(false);
   }
 }
 
 const utils = /*#__PURE__*/Object.defineProperty({
 	__proto__: null,
 	deriveSessionActivity,
-	syncDocumentMode
+	syncDocumentMode,
+	syncReasoningThumb
 }, Symbol.toStringTag, { value: 'Module' });
 
 const require$$4 = /*@__PURE__*/getAugmentedNamespace(utils);
@@ -602,7 +656,7 @@ html[data-dsh-fairy-visual],html[data-dsh-fairy-visual] body{color-scheme:dark}h
   // zeroes its inline-size container and makes DSH fall back to the compact
   // model control (icon only). Restore the labelled control, and lift the
   // effort accents to the same contrast floor as the rest of the menu.
-  appendSection('themes', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-row]{--dsh-composer-model-text-display:block;--dsh-composer-model-icon-display:none}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] .re-model-menu :is(.re-model-row-effort,.re-effort-tick.is-selected){color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] [data-dsh-fairy-composer-reasoning-control="true"] .re-model-effort{color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] .re-model-root .re-model-effort{color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-model-root .re-model-effort{color:#1f5fd0!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-model-menu :is(.re-model-row-effort,.re-effort-tick.is-selected){color:#1f5fd0!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-effort-tick{color:#5a6672!important}html[data-dsh-fairy-visual] .re-effort.is-chibi{height:32px!important}html[data-dsh-fairy-visual] .re-effort.is-chibi .re-effort-knob{left:clamp(14px,var(--re-progress),calc(100% - 14px))!important;width:28px!important;height:28px!important;border:1px solid rgba(255,255,255,.94)!important;border-radius:50%!important;background-color:#fff!important;background-image:none!important;background-repeat:initial!important;background-position:initial!important;background-size:initial!important;box-shadow:0 0 0 2px rgba(92,105,255,.12),0 0 14px rgba(121,82,255,.48),0 2px 7px rgba(0,0,0,.3)!important;filter:none!important;animation:none!important;transform-origin:center!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-effort.is-chibi .re-effort-knob{border-color:rgba(0,0,0,.12)!important;box-shadow:0 0 0 2px rgba(92,105,255,.16),0 2px 7px rgba(0,0,0,.22)!important}`);
+  appendSection('themes', `html[data-dsh-fairy-visual] [data-dsh-fairy-composer-row]{--dsh-composer-model-text-display:block;--dsh-composer-model-icon-display:none}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] .re-model-menu :is(.re-model-row-effort,.re-effort-tick.is-selected){color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] [data-dsh-fairy-composer-reasoning-control="true"] .re-model-effort{color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="dark"] .re-model-root .re-model-effort{color:#8fd0ff!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-model-root .re-model-effort{color:#1f5fd0!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-model-menu :is(.re-model-row-effort,.re-effort-tick.is-selected){color:#1f5fd0!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] .re-effort-tick{color:#5a6672!important}html[data-dsh-fairy-visual]:not([data-dsh-fairy-chibi-thumb="true"]) .re-effort.is-chibi{height:32px!important}html[data-dsh-fairy-visual]:not([data-dsh-fairy-chibi-thumb="true"]) .re-effort.is-chibi .re-effort-knob{left:clamp(14px,var(--re-progress),calc(100% - 14px))!important;width:28px!important;height:28px!important;border:1px solid rgba(255,255,255,.94)!important;border-radius:50%!important;background-color:#fff!important;background-image:none!important;background-repeat:initial!important;background-position:initial!important;background-size:initial!important;box-shadow:0 0 0 2px rgba(92,105,255,.12),0 0 14px rgba(121,82,255,.48),0 2px 7px rgba(0,0,0,.3)!important;filter:none!important;animation:none!important;transform-origin:center!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"]:not([data-dsh-fairy-chibi-thumb="true"]) .re-effort.is-chibi .re-effort-knob{border-color:rgba(0,0,0,.12)!important;box-shadow:0 0 0 2px rgba(92,105,255,.16),0 2px 7px rgba(0,0,0,.22)!important}`);
   appendSection('themes', `html[data-dsh-fairy-visual] [data-dsh-fairy-native-new-session="true"],html[data-dsh-fairy-visual] [data-slot="sidebar.footer.action"] [aria-label^="DeepSeek 余额"]{background-image:radial-gradient(circle at 1px 1px,var(--dsh-card-grain-light) 0 .34px,transparent .68px),radial-gradient(circle at 2px 3px,var(--dsh-card-grain-dark) 0 .34px,transparent .72px),linear-gradient(135deg,var(--dsh-card-sheen-light),transparent 48%,var(--dsh-card-sheen-dark)),linear-gradient(var(--dsh-card-fill),var(--dsh-card-fill)),var(--dsh-card-border)!important;background-size:4px 4px,7px 7px,100% 100%,100% 100%,100% 100%!important;background-position:0 0,1px 2px,0 0,0 0,0 0!important;background-repeat:repeat,repeat,no-repeat,no-repeat,no-repeat!important;background-clip:padding-box,padding-box,padding-box,padding-box,border-box!important;background-origin:padding-box,padding-box,padding-box,padding-box,border-box!important;overflow:hidden!important}html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [data-dsh-fairy-native-new-session="true"],html[data-dsh-fairy-visual][data-dsh-fairy-theme="light"] [data-slot="sidebar.footer.action"] [aria-label^="DeepSeek 余额"]{background-image:radial-gradient(circle at 1px 1px,var(--dsh-card-grain-light) 0 .34px,transparent .68px),radial-gradient(circle at 2px 3px,var(--dsh-card-grain-dark) 0 .34px,transparent .72px),linear-gradient(135deg,var(--dsh-card-sheen-light),transparent 48%,var(--dsh-card-sheen-dark)),linear-gradient(var(--dsh-card-fill),var(--dsh-card-fill)),var(--dsh-card-border)!important;background-size:4px 4px,7px 7px,100% 100%,100% 100%,100% 100%!important;background-position:0 0,1px 2px,0 0,0 0,0 0!important;background-repeat:repeat,repeat,no-repeat,no-repeat,no-repeat!important;background-clip:padding-box,padding-box,padding-box,padding-box,border-box!important;background-origin:padding-box,padding-box,padding-box,padding-box,border-box!important;overflow:hidden!important}`);
 
   // Keep the requested two-row data arrangement, but use the original plain
@@ -6971,6 +7025,7 @@ function requireSettingsNormalizer () {
 	    mascotAnimationSpeed: Number.isFinite(numericSpeed) ? nearest(numericSpeed, SPEED_STOPS) : 1,
 	    powerMode: source.powerMode === 'low-power' ? 'low-power' : 'normal',
 	    composerDockHeight: Number.isFinite(numericComposerHeight) ? Math.round(clamp(numericComposerHeight, 132, 420)) : 132,
+	    chibiThumb: source.chibiThumb === true,
 	  };
 	}
 
@@ -8414,6 +8469,7 @@ function requireClient () {
 	          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.theme === 'light', onChange: (event) => save(controller, 'theme', event.target.checked ? 'light' : 'dark') }), ' HDD 日间模式'] }),
 	          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.mascotVisible, onChange: (event) => save(controller, 'mascotVisible', event.target.checked) }), ' 显示 Fairy 主视觉'] }),
 	          jsx('label', { children: [jsx('input', { type: 'checkbox', checked: state.settings.powerMode === 'low-power', onChange: (event) => save(controller, 'powerMode', event.target.checked ? 'low-power' : 'normal') }), ' 低功耗模式'] }),
+	          jsx('label', { title: '推理强度滑条的滑块：默认是参考主题的白色圆钮，勾选后换成插件自带的大肥鱼贴图', children: [jsx('input', { type: 'checkbox', checked: state.settings.chibiThumb === true, onChange: (event) => save(controller, 'chibiThumb', event.target.checked) }), ' 推理滑条用大肥鱼贴图'] }),
 	          jsx('hr', {}),
 	          jsx('label', { children: ['Fairy 当前将我识别为：', jsx('select', { value: mode, onChange: (event) => save(identitySettings, 'mode', event.target.value), children: [jsx('option', { value: 'ling', children: '铃' }), jsx('option', { value: 'zhe', children: '哲' }), jsx('option', { value: 'custom', children: '自定义' })] })] }),
 	          mode === 'custom' ? jsx('label', { children: ['自定义称呼：', jsx('input', { value: identityValue.customName || '', maxLength: 40, onChange: (event) => save(identitySettings, 'customName', event.target.value) })] }) : null,
