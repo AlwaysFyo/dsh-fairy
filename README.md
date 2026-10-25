@@ -8,28 +8,30 @@
 在 **DSH 0.2.1-rc.2** 上的移植与适配（上游按 0.1.1-rc.2 编写）。上游许可
 （Apache-2.0）与全部改动说明见 `NOTICE`、`LICENSE`、`THIRD_PARTY_NOTICES.md`。
 
+![Fairy 主题界面](docs/assets/fairy-overview.webp)
+
 ## 包结构
 
 | 包 | 作用 |
 | --- | --- |
-| `packages/dsh-fairy` | 锚包。市场只需安装它：`skin.json` 让它被识别为主题，`cordis.patch.yml` 一次插入下面五行，市场一键停/起整组 |
-| `packages/dsh-fairy-visual` | 主题主体：HDD 背景网格、Fairy 舞台与状态机、侧栏聚合物板、满宽 composer dock、滚动条、Hero 投影、模式切换 glitch、设置页 |
-| `packages/dsh-fairy-startup` | 每个新 document 落到空白会话页（不再恢复上次会话） |
-| `packages/dsh-balance-meter` | 侧栏底部余额卡 + 今日 token 估算；HDD 下文案变「今日电量」 |
-| `packages/dsh-fairy-voice` | 朗读控制与波形；依赖外部本地 TTS（默认 `http://127.0.0.1:9880/tts`，可用 `DSH_FAIRY_TTS_URL`/`DSH_FAIRY_DOCS_URL` 覆盖），不可用时静默降级。选型与接入见 [docs/TTS.md](docs/TTS.md) |
-| `packages/dsh-browser-dock` | 浏览器 dock，配合 `@playwright/mcp` 的 stdio 代理 |
-| `packages/dsh-fairy-contracts` | 跨包只读契约：设置命名空间与版本、DOM 锚点、activity/lifecycle 词汇、诊断边界 |
+| `packages/dsh-fairy-next` | 锚包。市场只需安装它：`skin.json` 让它被识别为主题，`cordis.patch.yml` 一次插入下面五行，市场一键停/起整组 |
+| `packages/dsh-fairy-next-visual` | 主题主体：HDD 背景网格、Fairy 舞台与状态机、侧栏聚合物板、满宽 composer dock、滚动条、Hero 投影、模式切换 glitch、设置页 |
+| `packages/dsh-fairy-next-startup` | 每个新 document 落到空白会话页（不再恢复上次会话） |
+| `packages/dsh-fairy-next-balance` | 侧栏底部余额卡 + 今日 token 估算；HDD 下文案变「今日电量」 |
+| `packages/dsh-fairy-next-voice` | 朗读控制与波形；依赖外部本地 TTS（默认 `http://127.0.0.1:9880/tts`，可用 `DSH_FAIRY_TTS_URL`/`DSH_FAIRY_DOCS_URL` 覆盖），不可用时静默降级。选型与接入见 [docs/TTS.md](docs/TTS.md) |
+| `packages/dsh-fairy-next-browser-dock` | 浏览器 dock，配合 `@playwright/mcp` 的 stdio 代理 |
+| `packages/dsh-fairy-next-contracts` | 跨包只读契约：设置命名空间与版本、DOM 锚点、activity/lifecycle 词汇、诊断边界 |
 
 ## 与 0.1.1 的必要适配
 
-1. **`ctx.settingsScope` 在 0.2.1 已不存在** → `dsh-fairy-visual/src/client/scope-shim.js`
+1. **`ctx.settingsScope` 在 0.2.1 已不存在** → `dsh-fairy-next-visual/src/client/scope-shim.js`
    用宿主路由 `GET/PUT /dsh-fairy/settings?ns=<namespace>` 复刻
    `getSnapshot()/subscribe()/set()` 三个方法，数据落在 `$DSH_HOME/fairy-visual/settings.json`
    与 `$DSH_HOME/fairy-identity/identity.json`（原子写）。
 2. **DOM 漂移** → `dom-adapter.js` 同时接受 `[data-slot="main.conversation"]` 与
    `[data-composer-input]`（0.2.1 的输入是 contenteditable div，不是 textarea）；
    `[data-phase="plain"]` **不能**当成 active，那是 composer 自己的词表。
-3. **`sessions.clear()` 不存在** → `dsh-fairy-startup` 降级为「能清就清」，
+3. **`sessions.clear()` 不存在** → `dsh-fairy-next-startup` 降级为「能清就清」，
    否则 0.2.1「任一 entry 失败即整体失败」会让整页白屏。
 4. **`sessions.list.getSnapshot().current` 不存在** → 0.1.1 的选中会话在 `sessions.list`
    快照上，0.2.1 搬到了 **`uiSession.current`**（`getSnapshot().key` 才是 SessionId）。
@@ -201,7 +203,7 @@ Contents 为 Read and write。流水线第一步会先用 GitHub API 预检凭�
 | `prefers-reduced-motion: reduce` | 静止与切换后过渡帧均为 0，glitch 动画不挂 |
 | 语音链路（mock TTS） | `/fairy-voice/status` → `available:true`；`/tts` → `200 audio/pcm` 53 760 B；浏览器解码 0.6 s @32 kHz 实际出声 |
 | 市场式安装（tarball） | 7 个 `pnpm pack` 产物装进全新 `DSH_HOME` 后：`--dump-config` 出现五行，五个 client bundle 全部进 roster，voice 宿主可用 |
-| 市场式一键停/起 | 把锚包 patch 插入的五个 id 全部 `disabled: true` 后重启：roster 里不再有 `dsh-fairy-visual`，`/dsh-fairy/diag` 返回 **404**，日志无 fairy 相关 warning；去掉该层再启动即恢复（roster 命中、`diag.ok=true`） |
+| 市场式一键停/起 | 把锚包 patch 插入的五个 id 全部 `disabled: true` 后重启：roster 里不再有 `dsh-fairy-next-visual`，`/dsh-fairy/diag` 返回 **404**，日志无 fairy 相关 warning；去掉该层再启动即恢复（roster 命中、`diag.ok=true`） |
 | 眼睛大小 / 动画速度滑条 | 真实拖拽后落盘（`mascotScale 0.73`），`#dsh-fairy-root` 上 `--dsh-fairy-mascot-scale: 0.76`、`data-dsh-fairy-animation-rate=1.5` |
 | 选择模型 | 点击 → 「模型与推理等级」菜单 → 「模型」行 → 12 个 `menuitemradio`（两个 provider 组）→ 选中后按钮 `aria-label` 变为所选项 |
 | 余额卡随侧栏收放 | 展开 `[14,1078,242,62]` 三行；收起后原生 rail 56px、卡片变 `[5,1104,36,36]` 只显示 `¥`（不再左溢 30px）；再展开回到 `[14,1078,242,62]`。收起信号取原生 `frame[data-sidebar-collapsed]` + 实测列宽（slot 出口是 `display:contents`，量不到） |
@@ -254,7 +256,7 @@ node tools/pin-versions.mjs
 两点打包前提（真实市场安装时由 registry 满足）：
 
 - 七个包必须**一起发布**（内部互相依赖 `^0.1.0` 这类范围）；
-- `dsh-fairy-voice` 还要装 `mdast-util-from-markdown` / `mdast-util-gfm` / `micromark-extension-gfm`
+- `dsh-fairy-next-voice` 还要装 `mdast-util-from-markdown` / `mdast-util-gfm` / `micromark-extension-gfm`
   —— 缺了它的**宿主半边**会 import 失败，表现为启动日志一行
   `warning: 1 entry did not activate`，其余插件与整页仍正常（0.2.1 对宿主侧失败是告警，
   客户端侧失败才会驻留启动页）。

@@ -27,7 +27,7 @@ const themeSource = join(
   'lib',
   'client.js',
 )
-const outFile = join(repo, 'packages', 'dsh-fairy-visual', 'src', 'client', 'tokens.generated.js')
+const outFile = join(repo, 'packages', 'dsh-fairy-next-visual', 'src', 'client', 'tokens.generated.js')
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 

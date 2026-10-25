@@ -23,7 +23,7 @@ const referenceRoot = resolve(process.argv[2] ?? 'D:\\Projects\\Fairy-DSH')
 const PACKAGES = [
   {
     dir: 'fairy-startup/dsh-fairy-startup',
-    name: 'dsh-fairy-startup',
+    name: 'dsh-fairy-next-startup',
     version: '1.0.0',
     description: 'Fairy startup: every new document lands on a fresh session instead of restoring the previous one.',
     inject: [
@@ -37,7 +37,7 @@ const PACKAGES = [
   },
   {
     dir: 'balance-meter/dsh-balance-meter',
-    name: 'dsh-balance-meter',
+    name: 'dsh-fairy-next-balance',
     version: '0.2.0',
     description: 'DeepSeek balance card plus local daily token/cost estimate, rendered in the sidebar footer.',
     inject: [
@@ -51,7 +51,7 @@ const PACKAGES = [
   },
   {
     dir: 'fairy-voice/dsh-fairy-voice',
-    name: 'dsh-fairy-voice',
+    name: 'dsh-fairy-next-voice',
     version: '1.0.0',
     description: 'Fairy voice: local TTS playback for assistant replies through an external local TTS runtime.',
     inject: [
@@ -70,7 +70,7 @@ const PACKAGES = [
   },
   {
     dir: 'browser-dock/dsh-browser-dock',
-    name: 'dsh-browser-dock',
+    name: 'dsh-fairy-next-browser-dock',
     version: '0.1.0',
     description: 'Browser dock: an in-app browser surface plus the Playwright proxy it drives.',
     inject: [
@@ -102,7 +102,7 @@ const manifestFor = (spec) => ({
     },
   },
   dependencies: {
-    'dsh-fairy-contracts': 'link:../dsh-fairy-contracts',
+    'dsh-fairy-next-contracts': 'link:../dsh-fairy-next-contracts',
     ...spec.extraDependencies,
   },
   peerDependencies: {

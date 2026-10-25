@@ -1,0 +1,57 @@
+{
+  "name": "dsh-fairy-next-balance",
+  "version": "0.2.0",
+  "description": "DeepSeek balance card plus local daily token/cost estimate, rendered in the sidebar footer.",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
+    }
+  },
+  "dependencies": {
+    "dsh-fairy-next-contracts": "^0.1.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "balance",
+    "usage",
+    "sidebar"
+  ],
+  "author": "AlwaysFyo",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/AlwaysFyo/dsh-fairy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlwaysFyo/dsh-fairy.git",
+    "directory": "packages/dsh-fairy-next-balance"
+  },
+  "bugs": {
+    "url": "https://github.com/AlwaysFyo/dsh-fairy/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

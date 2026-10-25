@@ -1,0 +1,58 @@
+{
+  "name": "dsh-fairy-next",
+  "version": "0.1.0",
+  "description": "Fairy theme suite anchor: one install, one skin.json, one bundle patch that wires the Fairy plugins into a DSH profile.",
+  "type": "module",
+  "main": "./lib/index.js",
+  "icon": "icon.svg",
+  "exports": {
+    ".": "./lib/index.js",
+    "./skin.json": "./skin.json",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dependencies": {
+    "dsh-fairy-next-visual": "^0.1.0",
+    "dsh-fairy-next-startup": "^1.0.0",
+    "dsh-fairy-next-balance": "^0.2.0",
+    "dsh-fairy-next-voice": "^1.0.0",
+    "dsh-fairy-next-browser-dock": "^0.1.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "skin.json",
+    "icon.svg"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "theme",
+    "fairy",
+    "zenless-zone-zero",
+    "hdd",
+    "skin"
+  ],
+  "author": "AlwaysFyo",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/AlwaysFyo/dsh-fairy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlwaysFyo/dsh-fairy.git",
+    "directory": "packages/dsh-fairy-next"
+  },
+  "bugs": {
+    "url": "https://github.com/AlwaysFyo/dsh-fairy/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -85,7 +85,7 @@ const report = await session.evaluate(`(() => {
       'conversation-scroll': count('[data-conversation-scroll]'),
       'sidebar-layer': count('[data-dsh-fairy-sidebar-layer]'),
       transition: count('.dsh-hdd-mode-transition'),
-      'style-tags': count('style[data-plugin="dsh-fairy-visual"]'),
+      'style-tags': count('style[data-plugin="dsh-fairy-next-visual"]'),
     },
     paint: {
       body: pick('body'),

@@ -2,7 +2,7 @@
 /**
  * Reads the visual controller's projected state through the opt-in debug hook.
  *
- * The hook is installed by packages/dsh-fairy-visual/src/client/index.js only
+ * The hook is installed by packages/dsh-fairy-next-visual/src/client/index.js only
  * when localStorage['dsh-fairy:debug'] === '1', so this script seeds the flag,
  * reloads, then reports state before/after switching to another Session.
  *

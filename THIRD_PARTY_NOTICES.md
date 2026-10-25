@@ -5,10 +5,10 @@ Apache-2.0 许可范围内，发布时必须继续保留各自的许可证、版
 
 | 包 | 版本 / 来源 | 许可证 | 版权 / 来源 |
 | --- | --- | --- | --- |
-| `mdast-util-from-markdown` | 随 `packages/dsh-fairy-voice` 安装 | MIT | syntax-tree 贡献者 |
+| `mdast-util-from-markdown` | 随 `packages/dsh-fairy-next-voice` 安装 | MIT | syntax-tree 贡献者 |
 | `mdast-util-gfm` | 同上 | MIT | syntax-tree 贡献者 |
 | `micromark-extension-gfm` | 同上 | MIT | syntax-tree 贡献者 |
-| `@playwright/mcp` | 可选，由 `dsh-browser-dock/proxy.cjs` 在运行期解析 | Apache-2.0 | Microsoft；随包附带声明 |
+| `@playwright/mcp` | 可选，由 `dsh-fairy-next-browser-dock/proxy.cjs` 在运行期解析 | Apache-2.0 | Microsoft；随包附带声明 |
 | `rollup`、`@rollup/plugin-commonjs`、`@rollup/plugin-node-resolve` | 构建期 devDependency | MIT | Rollup 贡献者 |
 | `ws` | 开发期 CDP 客户端依赖 | MIT | websockets/ws contributors |
 

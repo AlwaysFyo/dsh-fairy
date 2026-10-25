@@ -16,14 +16,14 @@ Derived portions in this repository
 
 Ported verbatim (then adapted as listed further down):
 
-  packages/dsh-fairy-visual/src/client/**            <- fairy-visual/dsh-fairy-visual/src/client
-  packages/dsh-fairy-contracts/{index.js,client-dom.cjs,
+  packages/dsh-fairy-next-visual/src/client/**            <- fairy-visual/dsh-fairy-visual/src/client
+  packages/dsh-fairy-next-contracts/{index.js,client-dom.cjs,
     client-diagnostics.cjs,diagnostics.js,types.d.ts} <- fairy-contracts/
-  packages/dsh-fairy-startup/**                      <- fairy-startup/dsh-fairy-startup
-  packages/dsh-balance-meter/**                      <- balance-meter/dsh-balance-meter
-  packages/dsh-fairy-voice/**                        <- fairy-voice/dsh-fairy-voice
-  packages/dsh-browser-dock/**                       <- browser-dock/dsh-browser-dock
-  packages/dsh-fairy-visual/src/client/style.js      <- fairy-visual .../src/client/style.js
+  packages/dsh-fairy-next-startup/**                      <- fairy-startup/dsh-fairy-startup
+  packages/dsh-fairy-next-balance/**                      <- balance-meter/dsh-balance-meter
+  packages/dsh-fairy-next-voice/**                        <- fairy-voice/dsh-fairy-voice
+  packages/dsh-fairy-next-browser-dock/**                       <- browser-dock/dsh-browser-dock
+  packages/dsh-fairy-next-visual/src/client/style.js      <- fairy-visual .../src/client/style.js
 
 --------------------------------------------------------------------------
 Modifications made by this project
@@ -33,7 +33,7 @@ Modifications made by this project
    `lib/index.iife.js`; this project builds the same sources with rollup into
    `window.__ModuleLoader__.load({ id, factory })` CJS form (tools/build-client.mjs).
 2. Settings transport: DSH 0.2.1 no longer provides `ctx.settingsScope`, so
-   `packages/dsh-fairy-visual/src/client/scope-shim.js` supplies the same
+   `packages/dsh-fairy-next-visual/src/client/scope-shim.js` supplies the same
    `getSnapshot()/subscribe()/set()` surface over a host HTTP route
    (`GET/PUT /dsh-fairy/settings?ns=<namespace>`) backed by JSON files in
    `$DSH_HOME/fairy-visual/` and `$DSH_HOME/fairy-identity/`.
@@ -41,15 +41,15 @@ Modifications made by this project
    0.1.1 `settings` service; here each package registers its own `webServer`
    route instead. Voice paths and the balance-meter credentials path now honour
    `DSH_HOME` / `DSH_FAIRY_CREDENTIALS`.
-4. DOM compatibility for DSH 0.2.1 in `packages/dsh-fairy-visual/src/client/dom-adapter.js`:
+4. DOM compatibility for DSH 0.2.1 in `packages/dsh-fairy-next-visual/src/client/dom-adapter.js`:
    `conversation` also matches `[data-slot="main.conversation"]`,
    `composerTextarea` also matches `[data-composer-input]` (0.2.1 uses a
    contenteditable div instead of a textarea), and `phaseActive` stays
    `[data-phase="active"]` because the composer input carries its own
    `data-phase` vocabulary (`plain`).
-5. `dsh-fairy-startup` tolerates the missing `sessions.clear()` in 0.2.1 instead
+5. `dsh-fairy-next-startup` tolerates the missing `sessions.clear()` in 0.2.1 instead
    of failing the whole client graph.
-6. Relative contract imports are rewritten to `../../../dsh-fairy-contracts/`.
+6. Relative contract imports are rewritten to `../../../dsh-fairy-next-contracts/`.
 7. Added tooling that the reference does not ship: `tools/build-client.mjs`,
    `tools/build-all.mjs`, `tools/verify-build.mjs`, `tools/port-packages.mjs`,
    `tools/dev-*.mjs`, `tools/cdp/**` (CDP parity/contrast/DOM audits),
@@ -89,9 +89,9 @@ Modifications made by this project
     `fairy:persona` prompt section (order 100, `interpolate: false`, text provider
     re-evaluated on every assembly) and exposes that text as a settings field, so
     the prompt can be edited without touching a profile. New code lives in
-    `packages/dsh-fairy-visual/src/persona.js` (composition, identity clause,
+    `packages/dsh-fairy-next-visual/src/persona.js` (composition, identity clause,
     corpus access) plus the client-side `TtsSettings`/`PersonaSettings` blocks.
-15. Redistributed configuration assets: `packages/dsh-fairy-visual/assets/persona/`
+15. Redistributed configuration assets: `packages/dsh-fairy-next-visual/assets/persona/`
     reproduces the reference repository's `.agent-presets/fairy/` material —
     `fairy-persona.md` is extracted from the `text:` block of its
     `agent.cordis.yml`, and `corpus/` copies `preset.yml`, `ASSET-BOUNDARIES.json`,

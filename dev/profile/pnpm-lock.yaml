@@ -11,27 +11,27 @@ importers:
       '@ayanehana/dsh-reasoning-effort':
         specifier: 0.9.0
         version: 0.9.0(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-api-remotes@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-scope@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)))(@deepseek-ai/dsh-api-session-controller@0.2.1-rc.3(c39f840c4b237e7994e5de22f9c0f785))(@deepseek-ai/dsh-client-connection@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-scope@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)))(@deepseek-ai/dsh-client-locale@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-store@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-conversation@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-model-selection@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-renderer@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-session@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-settings@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-client-ui-slots@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))(react@18.3.1)
-      dsh-balance-meter:
-        specifier: link:../../packages/dsh-balance-meter
-        version: link:../../packages/dsh-balance-meter
-      dsh-browser-dock:
-        specifier: link:../../packages/dsh-browser-dock
-        version: link:../../packages/dsh-browser-dock
-      dsh-fairy:
-        specifier: link:../../packages/dsh-fairy
-        version: link:../../packages/dsh-fairy
-      dsh-fairy-contracts:
-        specifier: link:../../packages/dsh-fairy-contracts
-        version: link:../../packages/dsh-fairy-contracts
-      dsh-fairy-startup:
-        specifier: link:../../packages/dsh-fairy-startup
-        version: link:../../packages/dsh-fairy-startup
-      dsh-fairy-visual:
-        specifier: link:../../packages/dsh-fairy-visual
-        version: link:../../packages/dsh-fairy-visual
-      dsh-fairy-voice:
-        specifier: link:../../packages/dsh-fairy-voice
-        version: link:../../packages/dsh-fairy-voice
+      dsh-fairy-next:
+        specifier: link:../../packages/dsh-fairy-next
+        version: link:../../packages/dsh-fairy-next
+      dsh-fairy-next-balance:
+        specifier: link:../../packages/dsh-fairy-next-balance
+        version: link:../../packages/dsh-fairy-next-balance
+      dsh-fairy-next-browser-dock:
+        specifier: link:../../packages/dsh-fairy-next-browser-dock
+        version: link:../../packages/dsh-fairy-next-browser-dock
+      dsh-fairy-next-contracts:
+        specifier: link:../../packages/dsh-fairy-next-contracts
+        version: link:../../packages/dsh-fairy-next-contracts
+      dsh-fairy-next-startup:
+        specifier: link:../../packages/dsh-fairy-next-startup
+        version: link:../../packages/dsh-fairy-next-startup
+      dsh-fairy-next-visual:
+        specifier: link:../../packages/dsh-fairy-next-visual
+        version: link:../../packages/dsh-fairy-next-visual
+      dsh-fairy-next-voice:
+        specifier: link:../../packages/dsh-fairy-next-voice
+        version: link:../../packages/dsh-fairy-next-voice
 
 packages:
 

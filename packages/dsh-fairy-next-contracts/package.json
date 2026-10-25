@@ -1,0 +1,43 @@
+{
+  "name": "dsh-fairy-next-contracts",
+  "version": "0.1.0",
+  "description": "Immutable contracts shared by the Fairy DSH plugins (no DOM, no network, no storage).",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client-dom": "./client-dom.cjs",
+    "./client-diagnostics": "./client-diagnostics.cjs",
+    "./diagnostics": "./diagnostics.js",
+    "./types": "./types.d.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client-dom.cjs",
+    "client-diagnostics.cjs",
+    "diagnostics.js",
+    "types.d.ts"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "contracts",
+    "dom-anchors"
+  ],
+  "author": "AlwaysFyo",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/AlwaysFyo/dsh-fairy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlwaysFyo/dsh-fairy.git",
+    "directory": "packages/dsh-fairy-next-contracts"
+  },
+  "bugs": {
+    "url": "https://github.com/AlwaysFyo/dsh-fairy/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

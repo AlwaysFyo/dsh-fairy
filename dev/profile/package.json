@@ -4,20 +4,20 @@
   "description": "Isolated probe profile: boots the official web app plus the Fairy anchor bundle.",
   "dependencies": {
     "@ayanehana/dsh-reasoning-effort": "0.9.0",
-    "dsh-balance-meter": "link:../../packages/dsh-balance-meter",
-    "dsh-browser-dock": "link:../../packages/dsh-browser-dock",
-    "dsh-fairy": "link:../../packages/dsh-fairy",
-    "dsh-fairy-contracts": "link:../../packages/dsh-fairy-contracts",
-    "dsh-fairy-startup": "link:../../packages/dsh-fairy-startup",
-    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual",
-    "dsh-fairy-voice": "link:../../packages/dsh-fairy-voice"
+    "dsh-fairy-next-balance": "link:../../packages/dsh-fairy-next-balance",
+    "dsh-fairy-next-browser-dock": "link:../../packages/dsh-fairy-next-browser-dock",
+    "dsh-fairy-next": "link:../../packages/dsh-fairy-next",
+    "dsh-fairy-next-contracts": "link:../../packages/dsh-fairy-next-contracts",
+    "dsh-fairy-next-startup": "link:../../packages/dsh-fairy-next-startup",
+    "dsh-fairy-next-visual": "link:../../packages/dsh-fairy-next-visual",
+    "dsh-fairy-next-voice": "link:../../packages/dsh-fairy-next-voice"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
         "@deepseek-ai/dsh-web-app",
-        "dsh-fairy",
+        "dsh-fairy-next",
         "@ayanehana/dsh-reasoning-effort"
       ]
     }

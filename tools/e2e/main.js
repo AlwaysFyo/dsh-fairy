@@ -60,7 +60,7 @@ app.on('ready', async () => {
   results.push(await probe(`({
     boot: !!window.__DSH_BOOT__,
     entries: (window.__DSH_BOOT__ && window.__DSH_BOOT__.entries || []).length,
-    hasFairyEntry: (window.__DSH_BOOT__ && window.__DSH_BOOT__.entries || []).some(e => e.id === 'dsh-fairy-visual'),
+    hasFairyEntry: (window.__DSH_BOOT__ && window.__DSH_BOOT__.entries || []).some(e => e.id === 'dsh-fairy-next-visual'),
     loader: !!window.__ModuleLoader__,
     readyState: document.readyState
   })`, 'boot'));
