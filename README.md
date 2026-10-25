@@ -128,19 +128,24 @@ node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
 - 镜像（GitHub，私有、只读）：<https://github.com/AlwaysFyo/dsh-fairy>
 
 日常开发只推 CNB。`main` 上的每次 push 都会触发 `.cnb.yml` 里的
-`mirror-to-github` 流水线，用 `tencentcom/git-sync` 强制镜像到 GitHub：
+`mirror-to-github` 流水线，改写历史后强制镜像到 GitHub：
 
 ```powershell
 git push origin main             # origin = CNB
 ```
 
+镜像会**把 `.cnb.yml` 从整条历史里摘掉**（`git filter-branch --index-filter` +
+`--prune-empty`）：这份流水线配置只在 CNB 有意义，推到 GitHub 只是噪音。改写是
+确定性的——同样的输入永远得到同样的 SHA，所以增量推送仍然只传新提交；代价是
+**GitHub 的 SHA 与 CNB 不同**，两边不能直接比对 commit 号，只比对文件内容。
+
 镜像凭据（`GITHUB_USERNAME` / `GITHUB_TOKEN`）不写进仓库，由密钥仓库
 `one-mugen/secrets` 的 `secrets.yml` 通过 `imports` 注入；`GITHUB_TOKEN`
 需要 fine-grained token 的 Repository access 包含 `AlwaysFyo/dsh-fairy`、
 Contents 为 Read and write。流水线第一步会先用 GitHub API 预检凭据，
-凭据不可达时直接失败并给出具体原因，避免 `git-sync` 抛出难懂的认证错误。
+凭据不可达时直接失败并给出具体原因，避免推送阶段抛出难懂的认证错误。
 
-镜像是**强制**推送（`force: true`）：CNB 上被改写的历史会在 GitHub 上被同步覆盖，
+镜像是**强制**推送：CNB 上被改写的历史会在 GitHub 上被同步覆盖，
 所以不要在 GitHub 侧直接提交——那里的改动下次镜像就会被丢弃。
 
 ## 验收工具（`tools/cdp/`）
