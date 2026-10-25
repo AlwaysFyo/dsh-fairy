@@ -92,6 +92,30 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 注意：`dsh web` 子命令自带 profile 语义，直接 `dsh web` 会以 `web` profile 启动；
 且 `--profile` 与 `DSH_PROFILE` 不能同时给。
 
+### 推理强度座（第三方插件）
+
+参考项目的「模型与推理强度」弹窗不是参考仓库自写，而是
+[`dsh-reasoning-effort`](https://github.com/HanaAyane/dsh-reasoning-effort) 插件
+（参考站用 0.1.1 时代的 `0.6.2`）。本 dev profile 装的是作者为 0.2.x 重写的
+`@ayanehana/dsh-reasoning-effort@0.9.0`（`dev/profile/package.json`，同时列入
+`dsh.profile.bundles`）。
+
+该版本在 0.2.1 上会走「包装原生模型按钮」的分支，而它按 `menu.aria` 这个
+字典键去匹配原生菜单——0.2.1 的原生菜单 aria 是「模型与推理等级」，字典里只有
+`model.menuAria`，永远匹配不上，于是推理面板静默缺失。参考项目那张
+`.re-model-menu` 来自同一份代码的 **fallback** 分支（`AdvancedModelSelect`），
+因此开发环境用一次性补丁让它落到 fallback：
+
+```powershell
+node tools/patch-reasoning-effort.mjs          # 幂等；重装插件后再跑一次
+node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
+```
+
+我们只替换座位的来源，不改插件语义；主题侧只加了两类样式：恢复
+`--dsh-composer-model-text-display`（composer 行是 `display:contents`，
+原生 `container-type:inline-size` 会量到 0 宽而退化成纯图标），以及把推理等级与
+刻度提到 WCAG 4.5:1 以上。
+
 ## 验收工具（`tools/cdp/`）
 
 浏览器不可用时靠宿主信标；有 Chromium 时用真实 CDP 做数值断言（本机
@@ -111,6 +135,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | `node tools/cdp/session-activity.mjs` / `session-transition.mjs` | 观察 `.dsh-hdd-session-transition` 帧与 `data-fairy-state` 变化 |
 | `node tools/cdp/i18n-motion.mjs <url>` | 切到 `en` 后重测所有语义锚点；再模拟 `prefers-reduced-motion: reduce` 验证过渡被跳过 |
 | `node tools/cdp/voice-e2e.mjs <url>` | `/fairy-voice/status` → `/tts` → 32 kHz 实际播放 → 音频控件几何 |
+| `node tools/cdp/reasoning-check.mjs <url>` | 15 项推理强度座不变量：`.re-model-trigger` 带模型名与等级（非纯图标）、弹窗标题「模型与推理强度」、无档位模型给出原因、切到有档位模型后出现 `.re-advanced` + 4 档滑条、拖动改等级并回读 trigger、刻度与文字对比度 ≥ 4.5、模型列表 12 项、点空白处关闭 |
 | `node tools/cdp/persona-check.mjs <url>` | 13 项只读不变量：人设合成、身份条款、语料清单/读取/路径穿越、**真实组装里是否存在 `fairy:persona`**、TTS 配置与状态 |
 | `node tools/cdp/tts-auth-check.mjs <hostUrl> <mockAuthUrl>` | 15 项 API Key 不变量：落盘、**不回显明文**、掩码末四位、探活与合成是否带 `Authorization: Bearer`、无关保存保留 key、`clearApiKey` 清除后不再发头（临时把端点指向 mock，结束恢复原值） |
 | `node tools/cdp/yovoice-check.mjs <hostUrl> <token> <mockUrl>` | 13 项 yovoice 协议不变量：配置含 `protocol`/`modelId`/`voiceId`、保存后 `protocol=yovoice`、`/v1/status` 的 `ready` 判定、`/fairy-voice/engine` 拉到 models+voices、合成返回 `RIFF` WAV（32 kHz/16-bit）、探活与合成两条都带 `Bearer`、请求体含 modelId/voiceId |
@@ -138,7 +163,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 参考侧栏无「插件 / 自动化任务」行、设置行为「设置」42px | 参考实例的 profile 未启用这些面板；本实例走官方 panellist 布局（HDD 开/关均一致，非主题改动） |
 | 余额卡 `unavailable` | 0.2.1 的 `.credentials.yaml` 是结构化 `records:` 格式，没有参考实现读取的扁平 `DEEPSEEK_API_KEY`；把结构里的平台 grant token 直接当 API key 请求 `api.deepseek.com/user/balance` 会 401（已实测），所以这是凭据形态问题，参考实例同样 unavailable |
 | 朗读按钮存在但不出声 | 需要外部本地 TTS 与参考音色样本，仓库不提供；**链路本身已验证**（见 [docs/TTS.md](docs/TTS.md) 与 `tools/cdp/voice-e2e.mjs`） |
-| 我们的模型控件是 46×28 图标，参考是 220×28 带模型名的控件 | 参考那个控件来自它 profile 里的 `dsh-reasoning-effort`（`re-model-root`）；0.2.1 官方的模型入口就是图标按钮（`_7KE1Ra_trigger`，DOM 里没有文字标签），布局带一致但宽度不可比 |
+| 我们的模型控件曾是 46×28 图标，参考是 220×28 带模型名的控件 | 那个控件来自参考 profile 里的 `dsh-reasoning-effort`（`re-model-root`），0.2.1 官方的模型入口只有图标（`_7KE1Ra_trigger`，DOM 里没有文字标签）。dev profile 现已装 `@ayanehana/dsh-reasoning-effort@0.9.0` 并让它走 fallback 分支，座位变为 220×28、显示模型名与推理等级，与参考同布局带 |
 
 ### 已验证的行为（真实浏览器 + 数值断言）
 
@@ -170,6 +195,7 @@ node node_modules\@deepseek-ai\dsh\lib\bin.js --profile fairy-dev --no-open --po
 | 朗读控制胶囊（两段） | 左段红点 = 自动朗读开关，右段波形 = 语音音量并同时是拖动热区（原生 `range` 是 `opacity:0` 的覆盖层）。TTS 未就绪时：音量仍可拖（`1 → 0.75`、30 → 22 根亮条、`localStorage dsh.fairyVoice.volume=0.75`，刷新后保持），仅自动朗读禁用；胶囊 `data-dsh-fairy-engine-ready="false"`、`title` 显示不可用原因 |
 | 真实 yovoice 引擎 | `GET /fairy-voice/engine` 从 `127.0.0.1:9880` 拉到 1 个模型（`index-2.5-f16`）+ 16 个导入音色（`卡芙卡 • …`、`Fairy • …`）；`/v1/status` 探活 `available:true`；生成时 502 且错误信息带上引擎原话（`语音生成失败：@yovoice.error.generateFailed`） |
 | 右侧边栏原始承载面 | 按用户要求（m06540）撤回右栏蒙板、全屏网格/底色和三态 `ResizeObserver`：参考项目基于 0.1.1、没有 0.2.1 的右栏全屏，不能据此自绘；恢复原生 `_tabHost` 的 `background:var(--dsw-alias-bg-base)`，仅保留右栏 1px 分界线。停靠面板 `[1122,0,918,1200]`，全屏 `[0,0,2040,1200]`；全屏实测深色 `rgb(7,16,28)`、浅色 `rgb(247,250,252)`，均为纯色、无网格，底层对话不再透出 |
+| 模型与推理强度弹窗 | 座位是 `@ayanehana/dsh-reasoning-effort` 的 fallback 组件：`.re-model-trigger` 220×28 @ `[1569,1154]`、文字 `DeepSeek-V4-Pro Max`；弹层 `aria-label="模型与推理强度"`（312 宽），有档位模型显示 `.re-advanced` + `.re-effort-input[max=3]`，无档位模型显示「当前模型未提供推理强度档位」；真实拖拽 `High → Off → Max`，trigger 的 `aria-label` 同步；深色刻度 4.95 / 选中 9.44 / 名称 7.87，浅色 5.87 / 5.82，全部 ≥ 4.5（`tools/cdp/reasoning-check.mjs`） |
 
 ### 设置面板的打开前提
 

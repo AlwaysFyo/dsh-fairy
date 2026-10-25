@@ -92,7 +92,8 @@ const composerRun = () => page.evaluate(`(() => {
     const r = el.getBoundingClientRect();
     return [Math.round(r.x - origin.x), Math.round(r.y - origin.y), Math.round(r.width), Math.round(r.height)];
   };
-  const model = document.querySelector('[aria-label*="选择模型"], [aria-label*="请选择模型"]');
+  const model = document.querySelector('.re-model-root .re-model-trigger')
+    || document.querySelector('[aria-label*="选择模型"], [aria-label*="请选择模型"]');
   const send = document.querySelector('[data-dsh-fairy-composer-send-control="true"]') || document.querySelector('[aria-label="发送消息"]');
   const m = rel(model);
   const s = rel(send);
@@ -119,20 +120,24 @@ for (const width of WIDTHS) {
 
 const composer = await composerRun();
 console.log('composer ' + JSON.stringify(composer));
+// The reference popup keeps ~35px of air between the model seat and the send
+// button; the stock icon button used to sit at 8px.
 if (!composer || composer.gap === null) failures.push('model picker not found');
-else if (!composer.sameRow || composer.gap < 4 || composer.gap > 12) failures.push('model picker is not left of the send button: ' + JSON.stringify(composer));
+else if (!composer.sameRow || composer.gap < 4 || composer.gap > 40) failures.push('model picker is not left of the send button: ' + JSON.stringify(composer));
 
-const picker = await center(`document.querySelector('[aria-label*="选择模型"], [aria-label*="请选择模型"]')`);
+const picker = await center(`document.querySelector('.re-model-root .re-model-trigger') || document.querySelector('[aria-label*="选择模型"], [aria-label*="请选择模型"]')`);
 if (picker) {
   await click(picker.x, picker.y);
   await new Promise((r) => setTimeout(r, 900));
-  const cell = await center(`document.querySelector('[role="menu"] [role="menuitem"]')`);
+  // Both the stock two-level menu and the reasoning-effort popup route through a
+  // first-level cell before the radio list appears.
+  const cell = await center(`document.querySelector('.re-model-menu .re-model-row, [role="menu"] [role="menuitem"]')`);
   if (cell) {
     await click(cell.x, cell.y);
     let count = 0;
     for (let attempt = 0; attempt < 14 && !count; attempt++) {
       await new Promise((r) => setTimeout(r, 400));
-      count = await page.evaluate("[...document.querySelectorAll('[role=\"menuitemradio\"]')].length");
+      count = await page.evaluate("[...document.querySelectorAll('.re-model-option[role=\"menuitemradio\"], [role=\"menuitemradio\"]')].length");
     }
     console.log('picker  models=' + count);
     if (!count) failures.push('model list did not open');

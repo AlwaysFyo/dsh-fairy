@@ -3,20 +3,22 @@
   "private": true,
   "description": "Isolated probe profile: boots the official web app plus the Fairy anchor bundle.",
   "dependencies": {
+    "@ayanehana/dsh-reasoning-effort": "0.9.0",
+    "dsh-balance-meter": "link:../../packages/dsh-balance-meter",
+    "dsh-browser-dock": "link:../../packages/dsh-browser-dock",
     "dsh-fairy": "link:../../packages/dsh-fairy",
     "dsh-fairy-contracts": "link:../../packages/dsh-fairy-contracts",
-    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual",
     "dsh-fairy-startup": "link:../../packages/dsh-fairy-startup",
-    "dsh-balance-meter": "link:../../packages/dsh-balance-meter",
-    "dsh-fairy-voice": "link:../../packages/dsh-fairy-voice",
-    "dsh-browser-dock": "link:../../packages/dsh-browser-dock"
+    "dsh-fairy-visual": "link:../../packages/dsh-fairy-visual",
+    "dsh-fairy-voice": "link:../../packages/dsh-fairy-voice"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
         "@deepseek-ai/dsh-web-app",
-        "dsh-fairy"
+        "dsh-fairy",
+        "@ayanehana/dsh-reasoning-effort"
       ]
     }
   }

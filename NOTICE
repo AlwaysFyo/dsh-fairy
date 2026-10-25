@@ -114,6 +114,24 @@ Modifications made by this project
     volume is a saved preference (`dsh.fairyVoice.volume`), and the control group
     carries `data-dsh-fairy-engine-ready` plus the unavailability reason as its
     `title`, so the disabled state explains itself on hover.
+18. The "模型与推理强度" popup is third-party surface, not ported code. Fairy-DSH
+    installs `dsh-reasoning-effort` v0.6.2 (HanaAyane, MIT) into its profile and
+    patches only the chibi sprite; its `.re-model-menu` markup and behaviour are
+    that plugin's. This repository styles the same classes (menu colours, effort
+    contrast) and, in the dev profile, pins the 0.2.x rewrite
+    `@ayanehana/dsh-reasoning-effort@0.9.0`. That version tries to wrap the stock
+    model button and matches it through a `menu.aria` dictionary key that its own
+    locale files do not define, so the effort panel never appears on DSH 0.2.1;
+    `tools/patch-reasoning-effort.mjs` makes it take the plugin's own
+    `AdvancedModelSelect` branch instead. No plugin source is redistributed here,
+    and the patch is a dev-profile convenience applied after `pnpm install`.
+19. Composer model seat: the reference popup renders the model name and effort
+    label because its composer row keeps a measurable inline size. This port's
+    row is `display:contents`, which collapses the stock container query and
+    flips the row into `data-model-compact` (icon only). The theme now restores
+    `--dsh-composer-model-text-display`/`--dsh-composer-model-icon-display` on
+    that row and lifts the effort label and tick contrast above 4.5:1; geometry
+    (220x28 seat, ~35px gap to the send button) follows the plugin's own layout.
 
 --------------------------------------------------------------------------
 Original Fairy-DSH NOTICE
