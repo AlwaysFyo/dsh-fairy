@@ -125,11 +125,11 @@ node tools/patch-reasoning-effort.mjs --check  # 只检查是否已打
 - 主仓库（CNB，私有）：<https://cnb.cool/one-mugen/dsh-fairy>
 - 镜像（GitHub，私有、只读）：<https://github.com/AlwaysFyo/dsh-fairy>
 
-日常开发只推 CNB。`master` 上的每次 push 都会触发 `.cnb.yml` 里的
+日常开发只推 CNB。`main` 上的每次 push 都会触发 `.cnb.yml` 里的
 `mirror-to-github` 流水线，用 `tencentcom/git-sync` 强制镜像到 GitHub：
 
 ```powershell
-git push origin master           # origin = CNB
+git push origin main             # origin = CNB
 ```
 
 镜像凭据（`GITHUB_USERNAME` / `GITHUB_TOKEN`）不写进仓库，由密钥仓库
