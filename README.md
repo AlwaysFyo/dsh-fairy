@@ -138,6 +138,9 @@ git push origin master           # origin = CNB
 Contents 为 Read and write。流水线第一步会先用 GitHub API 预检凭据，
 凭据不可达时直接失败并给出具体原因，避免 `git-sync` 抛出难懂的认证错误。
 
+镜像是**强制**推送（`force: true`）：CNB 上被改写的历史会在 GitHub 上被同步覆盖，
+所以不要在 GitHub 侧直接提交——那里的改动下次镜像就会被丢弃。
+
 ## 验收工具（`tools/cdp/`）
 
 浏览器不可用时靠宿主信标；有 Chromium 时用真实 CDP 做数值断言（本机
