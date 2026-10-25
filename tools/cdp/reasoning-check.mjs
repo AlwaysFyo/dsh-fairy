@@ -14,6 +14,9 @@ const token = process.argv[3] || readFileSync('.dsh-dev-home/token.txt', 'utf8')
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const cdp = await openPage();
+// The composer sits on the bottom row of a full-width window; pin the viewport
+// so the measured boxes do not depend on how the attached browser was resized.
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 2040, height: 1200, deviceScaleFactor: 1, mobile: false });
 let failures = 0;
 const check = (name, ok, detail) => {
   if (!ok) failures += 1;

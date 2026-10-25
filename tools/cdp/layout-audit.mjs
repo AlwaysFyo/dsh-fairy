@@ -118,6 +118,11 @@ for (const width of WIDTHS) {
   if (!evenRhythm) failures.push(`header spacing at ${width}: ${JSON.stringify(gaps)}`);
 }
 
+// Measure the composer at the widest window: at 1280 with the right sidebar
+// docked the card is squeezed and the model seat legitimately overflows.
+await resize(Math.max(...WIDTHS));
+await new Promise((r) => setTimeout(r, 400));
+
 const composer = await composerRun();
 console.log('composer ' + JSON.stringify(composer));
 // The reference popup keeps ~35px of air between the model seat and the send
